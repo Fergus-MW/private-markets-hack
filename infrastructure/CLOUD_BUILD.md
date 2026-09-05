@@ -2,7 +2,7 @@
 
 ## Current status
 
-The pipeline is published on `main` and a real Cloud Build run successfully tested, built, pushed, and deployed the ingestion service: [verified build](https://console.cloud.google.com/cloud-build/builds;region=europe-west2/ad701613-588e-4875-bee6-45917bae09fa?project=230147580347).
+The pipeline is published on `main` and a real Cloud Build run successfully tested, built, pushed, and deployed the ingestion service: [verified build](https://console.cloud.google.com/cloud-build/builds;region=europe-west2/33083c57-7b88-4f35-a79a-1bccad8a90ca?project=230147580347).
 
 **Automatic push triggering is not active yet.** The GitHub connection is awaiting approval for its service-agent Secret Manager setup permissions, followed by GitHub App browser authorization. After that, enable and apply the repository/trigger resources as described below.
 
