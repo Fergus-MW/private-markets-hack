@@ -3,3 +3,8 @@ dist/
 .env
 .env.*
 !.env.example
+# package-lock.json stays authoritative for CI; other installers are local-only.
+pnpm-lock.yaml
+bun.lock
+bun.lockb
+yarn.lock

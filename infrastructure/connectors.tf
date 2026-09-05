@@ -116,19 +116,14 @@ resource "google_cloud_run_v2_job" "connector" {
             SOURCE_QUERY       = each.value.query
             DRIVE_ID           = each.value.drive_id
             INGESTION_URL      = each.value.ingest ? try(google_cloud_run_v2_service.ingestion[0].uri, "") : ""
+            # Named, not mounted: a mounted secret must already hold a version at
+            # deploy time, and execution overrides cannot repoint a secret ref.
+            # The worker reads this at run time, so one job serves many accounts.
+            CONNECTOR_SECRET = "${google_secret_manager_secret.connector[each.key].id}/versions/${each.value.secret_version}"
           }
           content {
             name  = env.key
             value = env.value
-          }
-        }
-        env {
-          name = "GOOGLE_OAUTH_CREDENTIALS"
-          value_source {
-            secret_key_ref {
-              secret  = google_secret_manager_secret.connector[each.key].secret_id
-              version = each.value.secret_version
-            }
           }
         }
       }

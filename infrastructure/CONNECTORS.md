@@ -70,7 +70,7 @@ gcloud secrets versions add connector-team-drive-oauth --project=PROJECT \
   --data-file=.google-oauth/team-drive.json
 ```
 
-The output files are created exclusively with mode `0600` and the directory is gitignored. Remove local token copies after uploading. A revoked/expired refresh token requires repeating consent and uploading a new secret version. Jobs use `latest` unless `secret_version` is pinned in the connection config. The account owner must complete consent; no account has been connected merely by provisioning resources.
+The output files are created exclusively with mode `0600` and the directory is gitignored. Remove local token copies after uploading. A revoked/expired refresh token requires repeating consent and uploading a new secret version. Jobs receive the secret's resource name in `CONNECTOR_SECRET` and read it at run time rather than mounting it, so a job can be created before its secret holds any version, and a single job can serve many accounts. Jobs use `latest` unless `secret_version` is pinned in the connection config. The account owner must complete consent; no account has been connected merely by provisioning resources.
 
 ## 3. Build, deploy and run
 
@@ -93,6 +93,17 @@ gcloud run jobs executions list --job=connector-team-mail --project=PROJECT --re
 Operators need `roles/run.invoker` on the jobs to execute them and appropriate read/log permissions to inspect results. The scheduler has only job invocation permissions. Add `schedule = "0 */6 * * *"` to a connection and apply to poll every six hours UTC. Cloud Scheduler uses an OAuth token for the Cloud Run Admin API; it acknowledges job launch, not ingestion completion.
 
 When the existing GitHub connection/trigger is enabled, Terraform adds `connectors-main`, watching the connector source and build YAML. It tests, builds and updates the explicitly configured jobs with the image digest. Terraform owns job configuration and ignores subsequent image updates, matching the ingestion deployment pattern. This pipeline does not execute imports on deployment.
+
+## Per-account connections from the frontend
+
+The frontend (`frontend/`) writes one secret per verified Google account, `connector-u-<hash>-oauth`, and grants the connector job read access to that secret alone. To scan an account, override the two per-account values at execution time; the job's stored configuration is unchanged, so one job serves every connected account:
+
+```sh
+gcloud run jobs execute connector-team-drive --project=PROJECT --region=europe-west2 \
+  --update-env-vars CONNECTOR_SECRET=projects/PROJECT/secrets/connector-u-HASH-oauth/versions/latest,CONNECTOR_PREFIX=u-HASH --wait
+```
+
+`CONNECTOR_PREFIX` isolates each account's key space within the shared bucket: `u-HASH/raw/`, `u-HASH/metadata/`, `u-HASH/completed/` and its own `u-HASH/state/lease.json`, so accounts neither read each other's objects nor block each other's executions. An empty prefix keeps the original single-account layout. `GET /api/session` returns the connector id, so the hash does not need to be derived by hand. Connecting authorizes an account; it does not start an import.
 
 ## Progress, retries and retention
 

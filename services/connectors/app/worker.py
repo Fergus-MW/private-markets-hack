@@ -117,28 +117,30 @@ def download(service, provider, item, output, max_bytes, heartbeat=lambda: None)
 
 
 class Archive:
-    def __init__(self, bucket):
+    """Objects live under an optional prefix so one bucket can hold many accounts."""
+    def __init__(self, bucket, prefix=""):
         self.bucket = bucket
+        self.prefix = prefix
 
     def read(self, name):
         from google.api_core.exceptions import NotFound
         try:
-            return json.loads(self.bucket.blob(name).download_as_text())
+            return json.loads(self.bucket.blob(self.prefix + name).download_as_text())
         except NotFound:
             return None
 
     def write(self, name, value):
-        self.bucket.blob(name).upload_from_string(json.dumps(value), content_type="application/json")
+        self.bucket.blob(self.prefix + name).upload_from_string(json.dumps(value), content_type="application/json")
 
     def upload(self, key, source, mime):
         source.seek(0)
-        self.bucket.blob("raw/" + key).upload_from_file(source, content_type=mime)
+        self.bucket.blob(self.prefix + "raw/" + key).upload_from_file(source, content_type=mime)
 
 
 class Lease:
     """Generation preconditions exclude overlapping scheduler/manual executions."""
-    def __init__(self, bucket):
-        self.blob = bucket.blob("state/lease.json")
+    def __init__(self, bucket, prefix=""):
+        self.blob = bucket.blob(prefix + "state/lease.json")
         self.generation = None
 
     def acquire(self):
@@ -239,6 +241,31 @@ def make_ingest(url):
     return ingest
 
 
+def credentials_info(env=os.environ):
+    """Execution-time secret name wins; the mounted value stays the default.
+
+    Cloud Run job overrides can only set plain env vars, not secret references,
+    so per-account executions pass CONNECTOR_SECRET and the worker reads it.
+    """
+    name = env.get("CONNECTOR_SECRET")
+    if not name:
+        return json.loads(env["GOOGLE_OAUTH_CREDENTIALS"])
+    from google.cloud import secretmanager
+
+    payload = secretmanager.SecretManagerServiceClient().access_secret_version(name=name)
+    return json.loads(payload.payload.data.decode())
+
+
+def object_prefix(env=os.environ):
+    """Per-account key space. Empty keeps the original single-account layout."""
+    prefix = env.get("CONNECTOR_PREFIX", "").strip("/")
+    if not prefix:
+        return ""
+    if not all(c.isalnum() or c in "-_" for c in prefix):
+        raise ValueError("CONNECTOR_PREFIX must be alphanumeric, dash or underscore")
+    return prefix + "/"
+
+
 def main():
     import httplib2
     from google.auth.exceptions import RefreshError
@@ -252,11 +279,12 @@ def main():
     provider = os.environ["CONNECTOR_PROVIDER"]
     if provider not in {"gmail", "drive"}:
         raise ValueError("Unknown connector provider")
-    credentials = Credentials.from_authorized_user_info(json.loads(os.environ["GOOGLE_OAUTH_CREDENTIALS"]))
+    credentials = Credentials.from_authorized_user_info(credentials_info())
     service = build(provider, "v1" if provider == "gmail" else "v3",
                     http=AuthorizedHttp(credentials, http=httplib2.Http(timeout=120)), cache_discovery=False)
     bucket = storage.Client().bucket(os.environ["CONNECTOR_BUCKET"])
-    lease = Lease(bucket)
+    prefix = object_prefix()
+    lease = Lease(bucket, prefix)
     if not lease.acquire():
         LOG.info("Another execution holds the connection lease")
         return
@@ -267,7 +295,7 @@ def main():
         for item in items(service, provider, os.environ.get("SOURCE_QUERY", ""), os.environ.get("DRIVE_ID", "")):
             lease.renew()
             try:
-                status = process(service, provider, item, Archive(bucket), ingest,
+                status = process(service, provider, item, Archive(bucket, prefix), ingest,
                                  int(os.environ.get("MAX_SOURCE_BYTES", str(256 * 1024 * 1024))), lease.renew)
             except RefreshError:
                 raise
@@ -278,7 +306,7 @@ def main():
                     raise
                 status = "failed"
             counts[status] = counts.get(status, 0) + 1
-        Archive(bucket).write("state/last_run.json", {"finished_at": time.time(), "counts": counts})
+        Archive(bucket, prefix).write("state/last_run.json", {"finished_at": time.time(), "counts": counts})
         LOG.info("Scan finished counts=%s", counts)
         if counts.get("failed"):
             raise RuntimeError("Scan has failed items; rerun to retry them")

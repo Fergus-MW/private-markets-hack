@@ -42,6 +42,9 @@ resource "google_service_account_iam_member" "build_act_as" {
 # GitHub authorization is completed using the connection's installation URL.
 # OAuth credentials remain in Secret Manager, not in this repository.
 resource "google_cloudbuildv2_connection" "github" {
+  # Only needed by the trigger; creating it requires the gcloud/GitHub App
+  # bootstrap below, so keep it gated with everything else that uses it.
+  count    = var.enable_github_trigger ? 1 : 0
   location = var.region
   name     = "github"
   github_config {}
@@ -61,7 +64,7 @@ resource "google_cloudbuildv2_repository" "main" {
   count             = var.enable_github_trigger ? 1 : 0
   name              = "private-markets-hack"
   location          = var.region
-  parent_connection = google_cloudbuildv2_connection.github.id
+  parent_connection = google_cloudbuildv2_connection.github[0].id
   remote_uri        = "https://github.com/Fergus-MW/private-markets-hack.git"
 }
 

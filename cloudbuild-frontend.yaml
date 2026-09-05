@@ -1,0 +1,37 @@
+steps:
+  - id: tests
+    name: node:22-slim
+    entrypoint: sh
+    args:
+      - -ceu
+      - |
+        cd frontend
+        npm ci
+        npm test
+        npm run build
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/frontend:$BUILD_ID', 'frontend']
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/frontend:$BUILD_ID']
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/services/frontend"
+        DIGEST=$$(gcloud artifacts docker images describe "$$IMAGE:$BUILD_ID" --format='value(image_summary.digest)')
+        test -n "$$DIGEST"
+        for SERVICE in ${_SERVICES}; do
+          gcloud run services update "$$SERVICE" --project="$PROJECT_ID" --region="${_REGION}" --image="$$IMAGE@$$DIGEST" --quiet
+        done
+substitutions:
+  _REGION: europe-west2
+  _SERVICES: ''
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: 900s
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/frontend:$BUILD_ID'
