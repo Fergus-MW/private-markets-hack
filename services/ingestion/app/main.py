@@ -9,10 +9,12 @@ from fastapi import FastAPI, HTTPException, Query, UploadFile
 from app.context import PIPELINE_VERSION, context_page, prepare_context
 from app.parser import SUPPORTED, parse_document
 from app.store import Store
+from app.graph_api import router as graph_router
 
 logger = logging.getLogger(__name__)
 MAX_BYTES = 20 * 1024 * 1024
-app = FastAPI(title="Document context ingestion", version="2.0.0")
+app = FastAPI(title="Private markets knowledge ingestion", version="3.0.0")
+app.include_router(graph_router)
 
 
 @app.get("/healthz")
