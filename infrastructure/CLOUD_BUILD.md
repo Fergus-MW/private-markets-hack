@@ -1,5 +1,13 @@
 # Automatic ingestion deployments
 
+## Current status
+
+The pipeline is published on `main` and a real Cloud Build run successfully tested, built, pushed, and deployed the ingestion service: [verified build](https://console.cloud.google.com/cloud-build/builds;region=europe-west2/ad701613-588e-4875-bee6-45917bae09fa?project=230147580347).
+
+**Automatic push triggering is not active yet.** The GitHub connection is awaiting approval for its service-agent Secret Manager setup permissions, followed by GitHub App browser authorization. After that, enable and apply the repository/trigger resources as described below.
+
+## Pipeline
+
 `cloudbuild.yaml` tests, builds, publishes, and deploys the ingestion service on pushes to `main` that change `services/ingestion/**` or `cloudbuild.yaml`. Pull requests do not deploy. Existing GitHub Actions checks can continue to run independently.
 
 Cloud Build uses `ingestion-build@private-markets-hack.iam.gserviceaccount.com`, with repository-level image publishing, service-level Cloud Run developer access, permission to act as the ingestion runtime account, and log writing. It has no database secret access or Terraform privileges. Each build uses a unique image tag and deploys the immutable digest. Failed tests or image builds stop deployment; Cloud Run waits for the updated service to become ready.
