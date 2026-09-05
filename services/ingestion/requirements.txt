@@ -1,0 +1,11 @@
+fastapi==0.116.1
+uvicorn==0.35.0
+python-multipart==0.0.20
+httpx==0.28.1
+unstructured[pdf,docx]==0.18.15
+spacy==3.8.7
+# Keep PDF inference compatible and prevent replacement of CPU-only PyTorch.
+torch==2.8.0+cpu
+torchvision==0.23.0
+unstructured-inference==1.0.5
+transformers==4.55.4

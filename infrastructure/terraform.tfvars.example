@@ -1,0 +1,8 @@
+project_id = "private-markets-hack-REPLACE"
+# org_id = "OPTIONAL_ORGANISATION_ID"
+billing_account = "REPLACE_WITH_BILLING_ACCOUNT"
+region = "europe-west2"
+zone = "europe-west2-a"
+invoker_members = ["user:REPLACE@example.com"]
+# Set after building and pushing the service image:
+# ingestion_image = "europe-west2-docker.pkg.dev/PROJECT/services/ingestion@sha256:..."

@@ -1,0 +1,49 @@
+#!/bin/bash
+set -euo pipefail
+apt-get update
+apt-get install -y docker.io curl python3
+systemctl enable --now docker
+DISK=/dev/disk/by-id/google-surrealdb-data
+# Never format a disk that already has a filesystem.
+if ! blkid "$DISK"; then mkfs.ext4 -m 0 "$DISK"; fi
+mkdir -p /var/lib/surrealdb
+mountpoint -q /var/lib/surrealdb || mount "$DISK" /var/lib/surrealdb
+chmod 700 /var/lib/surrealdb
+UUID=$(blkid -s UUID -o value "$DISK")
+grep -q "UUID=$UUID " /etc/fstab || printf 'UUID=%s /var/lib/surrealdb ext4 defaults 0 2\n' "$UUID" >> /etc/fstab
+mkdir -p /etc/systemd/system/docker.service.d
+printf '[Unit]\nRequiresMountsFor=/var/lib/surrealdb\n' > /etc/systemd/system/docker.service.d/surrealdb.conf
+systemctl daemon-reload
+# Secrets are fetched using the VM identity, and never embedded in metadata.
+TOKEN=$(curl -fsS -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+secret() {
+  curl --retry 8 --retry-all-errors --retry-delay 5 -fsS -H "Authorization: Bearer $TOKEN" "https://secretmanager.googleapis.com/v1/projects/${project_id}/secrets/$1/versions/latest:access" | python3 -c 'import json,base64,sys; print(base64.b64decode(json.load(sys.stdin)["payload"]["data"]).decode())'
+}
+ROOT_PASSWORD=$(secret surrealdb-root-password)
+INGESTION_PASSWORD=$(secret surrealdb-ingestion-password)
+umask 077
+printf 'SURREAL_USER=root\nSURREAL_PASS=%s\n' "$ROOT_PASSWORD" > /run/surrealdb.env
+docker pull '${surreal_image}'
+docker rm -f surrealdb || true
+docker run -d --name surrealdb --restart unless-stopped --user 0:0 --memory 1500m --log-opt max-size=10m --log-opt max-file=3 --env-file /run/surrealdb.env -p 8000:8000 -v /var/lib/surrealdb:/data '${surreal_image}' start --bind 0.0.0.0:8000 rocksdb:/data/database.db
+for attempt in $(seq 1 60); do
+  if curl -fsS http://127.0.0.1:8000/health; then break; fi
+  sleep 2
+done
+# Initialise a database-scoped writer. Random passwords are alphanumeric.
+export ROOT_PASSWORD INGESTION_PASSWORD
+python3 - <<'BOOTSTRAP'
+import base64, json, os, urllib.request
+password = os.environ["INGESTION_PASSWORD"]
+assert password.isalnum()
+query = "DEFINE NAMESPACE IF NOT EXISTS markets; USE NS markets; DEFINE DATABASE IF NOT EXISTS documents; USE DB documents; "
+query += "DEFINE USER OVERWRITE ingestion ON DATABASE PASSWORD '" + password + "' ROLES EDITOR;"
+query += "DEFINE TABLE IF NOT EXISTS document SCHEMALESS; DEFINE TABLE IF NOT EXISTS person SCHEMALESS; DEFINE TABLE IF NOT EXISTS company SCHEMALESS; DEFINE TABLE IF NOT EXISTS mention SCHEMALESS; DEFINE INDEX IF NOT EXISTS mention_document ON mention FIELDS document; DEFINE INDEX IF NOT EXISTS mention_entity ON mention FIELDS entity;"
+auth = base64.b64encode(("root:" + os.environ["ROOT_PASSWORD"]).encode()).decode()
+req = urllib.request.Request("http://127.0.0.1:8000/sql", data=query.encode(), headers={"Authorization": "Basic " + auth, "Accept": "application/json"})
+with urllib.request.urlopen(req, timeout=60) as response:
+    results = json.load(response)
+if any(r["status"] != "OK" for r in results):
+    raise RuntimeError("Database bootstrap failed")
+BOOTSTRAP
+unset TOKEN ROOT_PASSWORD INGESTION_PASSWORD
