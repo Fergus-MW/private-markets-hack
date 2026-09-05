@@ -249,6 +249,31 @@ resource "google_cloud_run_v2_service" "ingestion" {
           }
         }
       }
+      # Project provisioning for the knowledge-graph pipeline. These secrets are
+      # created and rotated outside Terraform; only the wiring is declared here so
+      # an apply cannot silently strip them from the running service.
+      env {
+        name  = "SURREAL_PROJECT_ADMIN_USER"
+        value = "workflow_provisioner"
+      }
+      env {
+        name = "SURREAL_PROJECT_ADMIN_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = "surrealdb-project-provisioner-password"
+            version = "1"
+          }
+        }
+      }
+      env {
+        name = "SURREAL_PROJECT_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = "surrealdb-project-credential-key"
+            version = "1"
+          }
+        }
+      }
       startup_probe {
         initial_delay_seconds = 10
         period_seconds        = 10

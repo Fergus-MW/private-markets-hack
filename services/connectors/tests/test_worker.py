@@ -3,7 +3,8 @@ import io
 import unittest
 from unittest.mock import MagicMock, patch
 
-from app.worker import EXPORTS, GOOGLE_NATIVE, Lease, download, items, make_ingest, object_key, process
+from app.worker import (EXPORTS, GOOGLE_NATIVE, Archive, Lease, credentials_info, download, items,
+                        make_ingest, object_prefix, object_key, process)
 
 
 class MemoryArchive:
@@ -219,3 +220,55 @@ class WorkerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MultiAccountTests(unittest.TestCase):
+    """Per-account isolation: one bucket and one job serve many connected users."""
+
+    def test_prefix_isolates_objects_and_lease(self):
+        bucket = MagicMock()
+        Archive(bucket, "u_abc/").write("completed/k.json", {"status": "ingested"})
+        bucket.blob.assert_called_with("u_abc/completed/k.json")
+        Archive(bucket, "u_abc/").upload("k", io.BytesIO(b"x"), "text/plain")
+        bucket.blob.assert_called_with("u_abc/raw/k")
+        Lease(bucket, "u_abc/")
+        bucket.blob.assert_called_with("u_abc/state/lease.json")
+
+    def test_two_accounts_never_share_a_completion_marker(self):
+        bucket = MagicMock()
+        blobs = {}
+        bucket.blob.side_effect = lambda name: blobs.setdefault(name, MagicMock())
+        Archive(bucket, "u_one/").write("completed/same.json", {"status": "ingested"})
+        Archive(bucket, "u_two/").write("completed/same.json", {"status": "ingested"})
+        self.assertEqual(sorted(blobs), ["u_one/completed/same.json", "u_two/completed/same.json"])
+
+    def test_empty_prefix_preserves_original_layout(self):
+        bucket = MagicMock()
+        Archive(bucket).write("state/last_run.json", {})
+        bucket.blob.assert_called_with("state/last_run.json")
+        self.assertEqual(object_prefix({}), "")
+        self.assertEqual(object_prefix({"CONNECTOR_PREFIX": ""}), "")
+
+    def test_prefix_is_normalised_and_validated(self):
+        self.assertEqual(object_prefix({"CONNECTOR_PREFIX": "/u_abc/"}), "u_abc/")
+        self.assertEqual(object_prefix({"CONNECTOR_PREFIX": "u_abc"}), "u_abc/")
+        # A traversal or wildcard prefix must not reach another account's keys.
+        for bad in ("../other", "u/../..", "a b", "u*"):
+            with self.assertRaises(ValueError):
+                object_prefix({"CONNECTOR_PREFIX": bad})
+
+    def test_mounted_credentials_used_when_no_secret_named(self):
+        self.assertEqual(credentials_info({"GOOGLE_OAUTH_CREDENTIALS": '{"type": "authorized_user"}'}),
+                         {"type": "authorized_user"})
+
+    def test_named_secret_overrides_mounted_value(self):
+        name = "projects/p/secrets/connector-u-abc-oauth/versions/latest"
+        client = MagicMock()
+        client.access_secret_version.return_value.payload.data = b'{"refresh_token": "from-secret"}'
+        module = MagicMock()
+        module.SecretManagerServiceClient.return_value = client
+        with patch.dict("sys.modules", {"google.cloud.secretmanager": module}):
+            result = credentials_info({"CONNECTOR_SECRET": name,
+                                       "GOOGLE_OAUTH_CREDENTIALS": '{"refresh_token": "mounted"}'})
+        self.assertEqual(result, {"refresh_token": "from-secret"})
+        self.assertEqual(client.access_secret_version.call_args.kwargs["name"], name)

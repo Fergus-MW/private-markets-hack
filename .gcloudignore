@@ -1,0 +1,23 @@
+# Cloud Build source uploads. Without this, gcloud falls back to the root
+# .gitignore only, which misses frontend/.gitignore and ships node_modules.
+.git/
+.gitignore
+
+# Build outputs and dependencies - rebuilt inside the container.
+node_modules/
+frontend/node_modules/
+frontend/dist/
+__pycache__/
+.pytest_cache/
+.venv/
+
+# Local-only state, credentials and tooling output.
+.env
+.google-oauth/
+infrastructure/.terraform/
+*.tfstate*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+graphify-out/
+.DS_Store

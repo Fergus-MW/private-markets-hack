@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
-import { configuration, createAuth, seal, unseal, SCOPES } from '../server/auth.mjs';
+import { configuration, connectorId, createAuth, seal, unseal, SCOPES } from '../server/auth.mjs';
 
 const config = {
   origin: 'https://app.example.com', secure: true, enabled: true, key: randomBytes(32),
   clientId: 'client', clientSecret: 'secret',
-  accounts: { 'person@example.com': { gmail: 'projects/demo/secrets/connector-mail-oauth', drive: 'projects/demo/secrets/connector-drive-oauth' } },
+  project: 'demo-project', serviceAccount: 'connector@demo-project.iam.gserviceaccount.com',
 };
 function fixture(options = {}) {
   const saved = [];
@@ -18,9 +18,9 @@ function fixture(options = {}) {
     async verifyIdToken() { return { getPayload: () => ({ email: options.email || 'person@example.com', email_verified: options.verified ?? true, nonce: options.nonce || tokenOptions.nonce }) }; },
     async getTokenInfo() { return { scopes: options.scopes || SCOPES }; },
   };
-  const handle = createAuth(options.config || config, { oauth, saveSecret: async (name, credentials) => {
+  const handle = createAuth(options.config || config, { oauth, connect: async (id, credentials) => {
     if (options.failSave) throw new Error('storage unavailable');
-    saved.push({ name, credentials });
+    saved.push({ id, credentials });
   } });
   async function request(path, cookie = '') {
     const response = { writeHead(status, headers) { this.status = status; this.headers = headers; }, end(body) { this.body = body; } };
@@ -44,19 +44,20 @@ test('one consent flow requests both integrations with offline access and PKCE',
   assert.match(response.headers['Set-Cookie'][0], /HttpOnly; SameSite=Lax; Max-Age=600; Secure/);
   assert.ok(!response.headers['Set-Cookie'][0].includes('verifier'));
 });
-test('successful callback saves compatible credentials for both workers before success', async () => {
+test('successful callback saves compatible credentials before reporting success', async () => {
   const f = fixture();
   const { cookie, state } = await f.start();
   const result = await f.request(`/api/auth/google/callback?code=code&state=${state}`, cookie);
   assert.equal(result.headers.Location, '/?connection=success');
   assert.equal(f.verifier, 'verifier');
-  assert.equal(f.saved.length, 2);
-  assert.deepEqual(f.saved.map(s => s.name), Object.values(config.accounts['person@example.com']));
+  assert.equal(f.saved.length, 1);
+  assert.deepEqual(f.saved.map(s => s.id), [connectorId('person@example.com')]);
   assert.equal(f.saved[0].credentials.type, 'authorized_user');
   assert.equal(f.saved[0].credentials.refresh_token, 'refresh');
   const sessionCookie = result.headers['Set-Cookie'][1].split(';')[0];
   const session = await f.request('/api/session', sessionCookie);
-  assert.deepEqual(JSON.parse(session.body), { connected: true, email: 'person@example.com', configured: true });
+  assert.deepEqual(JSON.parse(session.body), { connected: true, email: 'person@example.com',
+    connector: connectorId('person@example.com'), configured: true });
   assert.ok(!session.body.includes('refresh'));
 });
 test('invalid state never exchanges a code or writes credentials', async () => {
@@ -77,7 +78,6 @@ test('cancellation returns a recoverable result', async () => {
 for (const [name, options, reason] of [
   ['partial consent', { scopes: [SCOPES[2]] }, 'permissions'],
   ['missing refresh token', { tokens: { refresh_token: undefined } }, 'permissions'],
-  ['unknown account', { email: 'other@example.com' }, 'account'],
   ['unverified email', { verified: false }, 'account'],
   ['mismatched OpenID nonce', { nonce: 'wrong-nonce' }, 'account'],
   ['persistence failure', { failSave: true }, 'failed'],
@@ -90,6 +90,15 @@ for (const [name, options, reason] of [
     assert.equal(f.saved.length, 0);
   });
 }
+test('a newly seen account gets its own connector rather than another account\'s', async () => {
+  const f = fixture({ email: 'other@example.com' });
+  const { cookie, state } = await f.start();
+  const result = await f.request(`/api/auth/google/callback?code=code&state=${state}`, cookie);
+  assert.equal(result.headers.Location, '/?connection=success');
+  assert.deepEqual(f.saved.map(s => s.id), [connectorId('other@example.com')]);
+  assert.notEqual(connectorId('other@example.com'), connectorId('person@example.com'));
+});
+
 test('expired and tampered cookies cannot create a session', () => {
   const expired = seal({ expires: Date.now() - 1 }, config.key);
   assert.equal(unseal(expired, config.key), null);
@@ -101,10 +110,20 @@ test('missing setup shows setup status, not fake authorization', async () => {
   assert.equal((await f.request('/api/auth/google/start')).headers.Location, '/?connection=setup');
   assert.deepEqual(JSON.parse((await f.request('/api/session')).body), { connected: false, configured: false });
 });
-test('configuration rejects unsafe origins and shared secret targets across accounts', () => {
+test('configuration rejects unsafe origins and malformed connector targets', () => {
   assert.throws(() => configuration({ PUBLIC_ORIGIN: 'http://example.com' }));
-  assert.throws(() => configuration({ GOOGLE_CONNECTOR_ACCOUNTS: JSON.stringify({
-    'person@example.com': config.accounts['person@example.com'],
-    'other@example.com': config.accounts['person@example.com'],
-  }) }));
+  assert.throws(() => configuration({ CONNECTOR_PROJECT: 'Bad_Project' }));
+  assert.throws(() => configuration({ CONNECTOR_SERVICE_ACCOUNT: 'someone@example.com' }));
+  assert.throws(() => configuration({ SESSION_KEY: 'tooshort' }));
+});
+
+test('each account resolves to its own stable connector, and no other', () => {
+  assert.equal(connectorId('person@example.com'), connectorId('PERSON@Example.com'));
+  assert.notEqual(connectorId('person@example.com'), connectorId('other@example.com'));
+  assert.match(connectorId('person@example.com'), /^u-[0-9a-f]{16}$/);
+});
+
+test('an unconfigured deployment is never reported as enabled', () => {
+  assert.equal(configuration({}).enabled, false);
+  assert.equal(configuration({ CONNECTOR_PROJECT: 'demo-project' }).enabled, false);
 });
