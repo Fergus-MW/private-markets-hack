@@ -1,0 +1,338 @@
+subject,predicate,object,valid_from,valid_to,source_document,source_clause,version
+investor:6385_54462,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,name,Vanford Investment Pte Ltd,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,target_account_id,17951,2021-11-30,,Investors List (Corvus),,v1
+investor:6385_54462,commitment,27830000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,commitment_share,0.154612,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,called_31mar2026,18089500.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,unfunded_31mar2026,9740500.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6385_54462,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,name,Cantley Thurford Trentfield Lanbeck Yardgarth,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,target_account_id,36914,2021-11-30,,Investors List (Corvus),,v1
+investor:4051_19550,commitment,27760000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,commitment_share,0.154223,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,called_31mar2026,18044000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,unfunded_31mar2026,9716000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4051_19550,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,name,CIK Investment Wickdale Private Holdings (4) Inc.,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,target_account_id,69354,2021-11-30,,Investors List (Corvus),,v1
+investor:3858_92723,commitment,21103000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,commitment_share,0.11724,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,called_31mar2026,13716950.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,unfunded_31mar2026,7386050.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3858_92723,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,name,NUV16SUN Penmont Ltd.,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,target_account_id,51374,2021-11-30,,Investors List (Corvus),,v1
+investor:6247_11149,commitment,16900000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,commitment_share,0.093889,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,called_31mar2026,10985000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,unfunded_31mar2026,5915000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6247_11149,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,name,Thurford of Davgarth Investment Wickdale,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,target_account_id,91012,2021-11-30,,Investors List (Corvus),,v1
+investor:4108_63195,commitment,14959000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,commitment_share,0.083106,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,called_31mar2026,9723350.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,unfunded_31mar2026,5235650.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4108_63195,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:7335_02891,rdf:type,LP,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,name,Trentcombe Fund Investors LLC,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,invests_in,entity:2254,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,target_account_id,18550,2024-03-15,,Investors List (Corvus),,v1
+investor:7335_02891,commitment,13916000.0,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,commitment_share,0.077312,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,called_31mar2026,9045400.0,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,unfunded_31mar2026,4870600.0,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,mgmt_fee_rate_pa,0.0085,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,fee_basis,Commitment,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,fee_inside_commitment,Y,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,fee_offset_pct,0.8,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,fee_exempt,N,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,mfn,Y,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,cas_deadline_days,60,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,notices_contact,"Morgan Ashby, Fund Operations",2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:7335_02891,notices_email,m.ashby@trentcombe-fi.example,2024-03-15,,Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15,"2(a), 2(b), 4",v1
+investor:4130_22337,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,name,Selstead TUW-Zellley,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,target_account_id,99927,2021-11-30,,Investors List (Corvus),,v1
+investor:4130_22337,commitment,10200000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,commitment_share,0.056667,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,called_31mar2026,6630000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,unfunded_31mar2026,3570000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4130_22337,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,name,"Oakbeck Investments Private Equity Fund, L.P.",2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,target_account_id,10213,2021-11-30,,Investors List (Corvus),,v1
+investor:4324_22834,commitment,7034000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,commitment_share,0.039078,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,called_31mar2026,4572100.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,unfunded_31mar2026,2461900.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:4324_22834,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,name,"Eddwick Co-Investment Holdings V, L.P.",2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,target_account_id,35124,2021-11-30,,Investors List (Corvus),,v1
+investor:5719_43500,commitment,7034000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,commitment_share,0.039078,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,called_31mar2026,4572100.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,unfunded_31mar2026,2461900.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5719_43500,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,name,Thurford Wrenmere Steenvale Limited as covwold of Lindcombe Lanbeck NODE,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,target_account_id,34016,2021-11-30,,Investors List (Corvus),,v1
+investor:0386_00038,commitment,6958000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,commitment_share,0.038656,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,called_31mar2026,4522700.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,unfunded_31mar2026,2435300.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0386_00038,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,name,Clanfield Lanbeck Yardgarth of Ostdale,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,target_account_id,19002,2021-11-30,,Investors List (Corvus),,v1
+investor:2215_32092,commitment,6958000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,commitment_share,0.038656,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,called_31mar2026,4522700.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,unfunded_31mar2026,2435300.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:2215_32092,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,name,Innfield Brinbeck Global Private Equity LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,target_account_id,15210,2021-11-30,,Investors List (Corvus),,v1
+investor:6250_22863,commitment,5275000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,commitment_share,0.029306,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,called_31mar2026,3428750.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,unfunded_31mar2026,1846250.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:6250_22863,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,name,NUV16CIL Penmont Ltd.,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,target_account_id,68252,2021-11-30,,Investors List (Corvus),,v1
+investor:0203_02361,commitment,3974000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,commitment_share,0.022078,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,called_31mar2026,2583100.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,unfunded_31mar2026,1390900.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:0203_02361,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,name,"Zellworth Capital, a VEJ of Zellworth Family Holdings, LLC, a Cantley limited liability company",2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,target_account_id,55751,2021-11-30,,Investors List (Corvus),,v1
+investor:5160_94021,commitment,2813000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,commitment_share,0.015628,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,called_31mar2026,1828450.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,unfunded_31mar2026,984550.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5160_94021,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,name,"Nethbury Norvale Private Equity Fund, FEL",2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,target_account_id,43545,2021-11-30,,Investors List (Corvus),,v1
+investor:5210_59843,commitment,2462000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,commitment_share,0.013678,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,called_31mar2026,1600300.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,unfunded_31mar2026,861700.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:5210_59843,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,name,Renberg Grenshaw Oakwold Yardgarth,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,target_account_id,66531,2021-11-30,,Investors List (Corvus),,v1
+investor:3009_03432,commitment,2462000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,commitment_share,0.013678,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,called_31mar2026,1600300.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,unfunded_31mar2026,861700.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3009_03432,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,name,VAX Norvale Holdings LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,target_account_id,76819,2021-11-30,,Investors List (Corvus),,v1
+investor:3165_39026,commitment,1306000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,commitment_share,0.007256,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,called_31mar2026,848900.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,unfunded_31mar2026,457100.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3165_39026,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,rdf:type,LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,name,Renberg Grenshaw Norstead Umbholm and NODE,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,target_account_id,44274,2021-11-30,,Investors List (Corvus),,v1
+investor:3043_04282,commitment,1055000.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,commitment_share,0.005861,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,called_31mar2026,685750.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,unfunded_31mar2026,369250.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,mgmt_fee_rate_pa,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,fee_basis,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,fee_inside_commitment,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,fee_offset_pct,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,fee_exempt,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,notices_contact,Investor of record (subscription form),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:3043_04282,notices_email,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1, 8.3, 8.5, 12.2",v1
+investor:GP,rdf:type,GP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,name,Kestrel Lammwick GP LLC,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,invests_in,entity:2254,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,commitment,0.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,commitment_share,0.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,called_31mar2026,0.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,unfunded_31mar2026,0.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,mgmt_fee_rate_pa,0.0,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,fee_basis,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,fee_inside_commitment,n/a,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,fee_exempt,Y,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,mfn,N,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,cas_deadline_days,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,notices_contact,Kestrel Capital Investor Relations,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+investor:GP,notices_email,ir@kestrelcap.example,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),"8.1(c), 12.2",v1
+entity:2254,entity,Kestrel Lammwick Co-Invest LP,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),1,v1
+entity:2254,entity_id_corvus,2254,2021-11-30,,LE Mapping,,v1
+entity:2254,currency,USD,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),1,v1
+entity:2254,total_commitments,179999000,2021-11-30,,Derived: observed Q2 allocation shares x USD 180m,,v1
+entity:2254,final_close,2021-11-30,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),3.2,v1
+entity:2254,investment_period_end,2027-12-31,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),3.4,v1
+entity:2254,mgmt_fee_rate_pa_default,0.01,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.1(a),v1
+entity:2254,mgmt_fee_basis_investment_period,Commitment,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.1(a),v1
+entity:2254,mgmt_fee_basis_after_investment_period,Invested Capital,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.1(b),v1
+entity:2254,mgmt_fee_payment,"Quarterly in arrears, within 10 business days of quarter end",2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.2,v1
+entity:2254,mgmt_fee_drawn_inside_commitment_default,N (called in addition to Commitment),2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.3,v1
+entity:2254,fee_offset_pct_default,0.8,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.5,v1
+entity:2254,preferred_return,0.08,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),9.2,v1
+entity:2254,carried_interest,0.1,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),9.3,v1
+entity:2254,cas_deadline_days_default,60,2021-11-30,,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),12.2,v1
+entity:2254,invested_capital_30jun2026,150000000.0,2026-06-30,,Synthetic entity net invested cost,,v1

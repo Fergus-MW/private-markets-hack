@@ -1,0 +1,17 @@
+term,value,source_document,source_clause,valid_from
+entity,Kestrel Lammwick Co-Invest LP,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),1,2021-11-30
+entity_id_corvus,2254,LE Mapping,,2021-11-30
+currency,USD,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),1,2021-11-30
+total_commitments,179999000,Derived: observed Q2 allocation shares x USD 180m,,2021-11-30
+final_close,2021-11-30,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),3.2,2021-11-30
+investment_period_end,2027-12-31,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),3.4,2021-11-30
+mgmt_fee_rate_pa_default,0.01,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.1(a),2021-11-30
+mgmt_fee_basis_investment_period,Commitment,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.1(a),2021-11-30
+mgmt_fee_basis_after_investment_period,Invested Capital,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.1(b),2021-11-30
+mgmt_fee_payment,"Quarterly in arrears, within 10 business days of quarter end",LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.2,2021-11-30
+mgmt_fee_drawn_inside_commitment_default,N (called in addition to Commitment),LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.3,2021-11-30
+fee_offset_pct_default,0.8,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),8.5,2021-11-30
+preferred_return,0.08,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),9.2,2021-11-30
+carried_interest,0.1,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),9.3,2021-11-30
+cas_deadline_days_default,60,LPA key terms schedule - Kestrel Lammwick Co-Invest LP (extract),12.2,2021-11-30
+invested_capital_30jun2026,150000000.0,Synthetic entity net invested cost,,2026-06-30
