@@ -1,25 +1,9 @@
 import os
 import httpx
 
-# All document text and names are bound parameters, never interpolated SQL.
-SAVE = """
-BEGIN TRANSACTION;
-UPSERT type::thing('document', $document.key) CONTENT $document;
-DELETE mention WHERE document = type::thing('document', $document.key);
-FOR $entity IN $entities {
-    LET $rid = type::thing($entity.kind, $entity.key);
-    LET $old = SELECT * FROM ONLY $rid;
-    UPSERT $rid MERGE $entity;
-    UPDATE $rid SET aliases = array::union($old.aliases ?? [], $entity.aliases);
-};
-FOR $mention IN $mentions {
-    UPSERT type::thing('mention', $mention.key) CONTENT $mention;
-    UPDATE type::thing('mention', $mention.key) SET
-        document = type::thing('document', $document.key),
-        entity = type::thing($mention.kind, $mention.entity_key);
-};
-COMMIT TRANSACTION;
-"""
+# One document record contains both source elements and agent context. An upsert
+# atomically replaces the complete output; no entity or mention writes occur.
+SAVE = "UPSERT type::thing('document', $document.key) CONTENT $document;"
 
 
 class Store:
@@ -50,5 +34,9 @@ class Store:
             raise RuntimeError("SurrealDB statement failed; transaction was not acknowledged")
         return results
 
-    def save(self, document, entities, mentions):
-        self.query(SAVE, {"document": document, "entities": entities, "mentions": mentions})
+    def save(self, document):
+        self.query(SAVE, {"document": document})
+
+    def get(self, key):
+        rows = self.query("SELECT * FROM type::thing('document', $key);", {"key": key})[0]["result"]
+        return rows[0] if rows else None
