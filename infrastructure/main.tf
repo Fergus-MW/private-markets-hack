@@ -190,11 +190,20 @@ resource "google_artifact_registry_repository" "services" {
   depends_on    = [google_project_service.apis]
 }
 resource "google_cloud_run_v2_service" "ingestion" {
+  # Cloud Build owns application image updates after initial provisioning.
+  lifecycle {
+    ignore_changes = [template[0].containers[0].image]
+  }
   count               = var.ingestion_image == null ? 0 : 1
   name                = "document-ingestion"
   location            = var.region
   deletion_protection = false
   ingress             = "INGRESS_TRAFFIC_ALL"
+  # Match the service-level defaults returned by the Cloud Run API.
+  scaling {
+    min_instance_count    = 0
+    manual_instance_count = 0
+  }
   template {
     service_account                  = google_service_account.ingestion.email
     timeout                          = "900s"
