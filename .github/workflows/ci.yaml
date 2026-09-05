@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # ponytail: entity tests import only stdlib, so no pip install. Add a
+  # requirements install here if a test ever needs fastapi or spacy.
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: PYTHONPATH=services/ingestion python -m unittest discover -s services/ingestion/tests -v
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform -chdir=infrastructure fmt -check -recursive
+      - run: terraform -chdir=infrastructure init -backend=false
+      - run: terraform -chdir=infrastructure validate
