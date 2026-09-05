@@ -1,0 +1,35 @@
+steps:
+  - id: tests
+    name: python:3.11-slim
+    entrypoint: sh
+    args:
+      - -ceu
+      - |
+        pip install -r services/connectors/requirements.txt
+        PYTHONPATH=services/connectors python -m unittest discover -s services/connectors/tests -v
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/connectors:$BUILD_ID', 'services/connectors']
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/connectors:$BUILD_ID']
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/services/connectors"
+        DIGEST=$$(gcloud artifacts docker images describe "$$IMAGE:$BUILD_ID" --format='value(image_summary.digest)')
+        test -n "$$DIGEST"
+        for JOB in ${_JOBS}; do
+          gcloud run jobs update "$$JOB" --project="$PROJECT_ID" --region="${_REGION}" --image="$$IMAGE@$$DIGEST" --quiet
+        done
+substitutions:
+  _REGION: europe-west2
+  _JOBS: ''
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: 900s
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/connectors:$BUILD_ID'

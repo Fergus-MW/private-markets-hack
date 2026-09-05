@@ -1,0 +1,16 @@
+{
+  "name": "60x-knowledge-connect",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "dev:server": "node --env-file-if-exists=.env server/index.mjs",
+    "build": "vite build",
+    "start": "node --env-file-if-exists=.env server/index.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": { "google-auth-library": "^10.3.0", "three": "^0.180.0" },
+  "devDependencies": { "vite": "^8.0.0" }
+}

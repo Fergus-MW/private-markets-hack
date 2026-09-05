@@ -2,6 +2,7 @@
 __pycache__/
 .pytest_cache/
 .env
+.google-oauth/
 infrastructure/.terraform/
 *.tfstate*
 *.tfplan

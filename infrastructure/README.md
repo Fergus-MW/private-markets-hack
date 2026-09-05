@@ -51,7 +51,7 @@ Unauthenticated calls must return 403. A successful Terraform apply does not pro
 
 ## State and secrets
 
-Random passwords are stored in Secret Manager and also in Terraform state. State, plans, and `.tfvars` are gitignored. Keep local state private and backed up. Before shared/team operation, configure an access-controlled GCS state bucket with versioning and migrate using `terraform init -migrate-state`; do not share plaintext state or commit it. The provider lock file is committed for reproducible provider selection.
+Random passwords are stored in Secret Manager and also in Terraform state. State, plans, and `.tfvars` are gitignored. Keep local state private and backed up. Before shared/team operation, configure an access-controlled GCS state bucket with versioning and migrate using `terraform init -migrate-state`; do not share plaintext state or commit it. The provider lock file is included for reproducible provider selection.
 
 The VM reads secrets through its service identity and bootstraps a database-scoped editor. Cloud Run can read only the ingestion password. Password rotation needs a coordinated database-user update and Cloud Run revision; changing Secret Manager alone does not change SurrealDB's persisted root password. Never replace the random root password resource without a corresponding database password rotation.
 
