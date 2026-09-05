@@ -1,0 +1,18 @@
+subject,predicate,object,valid_from,valid_to,source_document,source_clause,version,operation
+investor:7335_02891,mgmt_fee_rate_pa,0.0085,2024-03-15,2026-06-30,Side letter SL-TRENTCOMBE-2024-01,,v1,close
+investor:7335_02891,mgmt_fee_rate_pa,0.0075,2026-07-01,,Side letter SL-TRENTCOMBE-2026-01 (amended and restated),2(a),v2,add
+investor:7335_02891,fee_basis,Commitment,2024-03-15,2026-06-30,Side letter SL-TRENTCOMBE-2024-01,,v1,close
+investor:7335_02891,fee_basis,Invested Capital,2026-07-01,,Side letter SL-TRENTCOMBE-2026-01 (amended and restated),2(b),v2,add
+investor:7335_02891,fee_offset_pct,0.8,2024-03-15,2026-06-30,Side letter SL-TRENTCOMBE-2024-01,,v1,close
+investor:7335_02891,fee_offset_pct,1.0,2026-07-01,,Side letter SL-TRENTCOMBE-2026-01 (amended and restated),2(c),v2,add
+investor:7335_02891,cas_deadline_days,60,2024-03-15,2026-06-30,Side letter SL-TRENTCOMBE-2024-01,,v1,close
+investor:7335_02891,cas_deadline_days,45,2026-07-01,,Side letter SL-TRENTCOMBE-2026-01 (amended and restated),5,v2,add
+investor:7335_02891,notices_contact,"Morgan Ashby, Fund Operations",2024-03-15,2026-06-30,Side letter SL-TRENTCOMBE-2024-01,,v1,close
+investor:7335_02891,notices_contact,"Dana Whitlock, Head of Fund Operations",2026-07-01,,Side letter SL-TRENTCOMBE-2026-01 (amended and restated),6,v2,add
+investor:7335_02891,notices_email,m.ashby@trentcombe-fi.example,2024-03-15,2026-06-30,Side letter SL-TRENTCOMBE-2024-01,,v1,close
+investor:7335_02891,notices_email,d.whitlock@trentcombe-fi.example,2026-07-01,,Side letter SL-TRENTCOMBE-2026-01 (amended and restated),6,v2,add
+investor:7335_02891,governed_by,document:SL-TRENTCOMBE-2024-01,2024-03-15,2026-06-30,Side letter SL-TRENTCOMBE-2024-01,,v1,close
+investor:7335_02891,governed_by,document:SL-TRENTCOMBE-2026-01 (amended and restated),2026-07-01,,Side letter SL-TRENTCOMBE-2026-01 (amended and restated),1,v2,add
+document:SL-TRENTCOMBE-2026-01 (amended and restated),rdf:type,SideLetter,2026-07-01,,email 2026-07-06,,v2,add
+document:SL-TRENTCOMBE-2026-01 (amended and restated),supersedes,document:SL-TRENTCOMBE-2024-01,2026-07-01,,Side letter SL-TRENTCOMBE-2026-01 (amended and restated),1,v2,add
+document:SL-TRENTCOMBE-2026-01 (amended and restated),received_via,email:20260706091400.trentcombe.lammwick,2026-07-06,,email 2026-07-06,,v2,add

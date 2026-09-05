@@ -1,0 +1,652 @@
+<title>Fund Admin Graph Ontology</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F5F6F3; --surface:#FFFFFF; --ink:#1C2430; --muted:#5E6B78; --rule:#D3D9D6;
+  --accent:#0E7C74; --accent-tint:#E1F0EE; --amber:#A8701A; --amber-tint:#F6ECD9; --code-bg:#EEF1EE;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12171C; --surface:#1A2128; --ink:#E4E9EC; --muted:#9AA7B2; --rule:#2C363F;
+    --accent:#4CBDB1; --accent-tint:#173431; --amber:#D9A94A; --amber-tint:#33291A; --code-bg:#0F1418;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12171C; --surface:#1A2128; --ink:#E4E9EC; --muted:#9AA7B2; --rule:#2C363F;
+  --accent:#4CBDB1; --accent-tint:#173431; --amber:#D9A94A; --amber-tint:#33291A; --code-bg:#0F1418;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.page{max-width:1080px;margin:0 auto;padding:56px 28px 80px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif;text-wrap:balance;margin:0;font-weight:600;line-height:1.15}
+h1{font-size:44px;letter-spacing:-.01em}
+h2{font-size:28px}
+h3{font-size:19px}
+p{margin:0}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+header{display:flex;flex-direction:column;gap:18px}
+header .lede{font-size:19px;line-height:1.5;color:var(--ink);max-width:78ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:14px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.stat{background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-family:Spectral,Georgia,serif;font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .l{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:22px}
+section>.head{display:flex;flex-direction:column;gap:8px}
+figure{margin:0;display:flex;flex-direction:column;gap:12px}
+figure svg{max-width:100%;height:auto;display:block;color:var(--ink);font-family:"Source Sans 3",system-ui,sans-serif}
+figcaption{font-size:14px;color:var(--muted);max-width:84ch}
+.diagram-wrap{border:1px solid var(--rule);background:var(--surface);padding:18px;overflow-x:auto}
+.node{fill:var(--surface);stroke:currentColor;stroke-width:1.2}
+.node.hinge{fill:var(--accent-tint);stroke:var(--accent);stroke-width:1.6}
+.name{font-size:13px;font-weight:600;fill:currentColor}
+.sub{font-size:10.5px;fill:var(--muted)}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:10px}
+.edge{stroke:currentColor;stroke-width:1.3;fill:none}
+.lbl{font-size:11px;fill:var(--muted)}
+.band{font-size:11px;letter-spacing:.09em;fill:var(--muted);font-weight:600}
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:820px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--rule)}
+th{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+td .tag{display:inline-block;margin-left:6px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600;vertical-align:middle}
+td .ok{color:var(--accent);font-weight:600}
+td .gap{color:var(--amber);font-weight:600}
+td code,p code,li code{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--code-bg);padding:1px 5px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{border:1px solid var(--rule);background:var(--surface);padding:18px 20px;display:flex;flex-direction:column;gap:8px}
+.card.hinge{background:var(--accent-tint);border-color:var(--accent)}
+.card h3{font-size:18px}
+.card p{font-size:15px;color:var(--ink)}
+.card .why{font-size:13.5px;color:var(--muted)}
+pre{margin:0;background:var(--code-bg);border:1px solid var(--rule);padding:16px 18px;overflow-x:auto;font:13px/1.55 "IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink)}
+pre .c{color:var(--muted)}
+pre .k{color:var(--accent);font-weight:500}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.qa{display:flex;flex-direction:column;gap:8px}
+.qa h3{font-size:17px}
+.qa .why{font-size:13.5px;color:var(--muted)}
+.seam{border:1px solid var(--accent);background:var(--accent-tint);padding:18px 22px;display:flex;flex-direction:column;gap:10px;max-width:84ch}
+.seam h3{font-size:18px}
+.seam p{font-size:15px}
+ol.questions{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;max-width:74ch}
+ol.questions li b{font-weight:600}
+footer{border-top:1px solid var(--rule);padding-top:18px;font-size:13.5px;color:var(--muted);max-width:84ch;display:flex;flex-direction:column;gap:6px}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:640px){h1{font-size:34px}.page{padding:36px 18px 60px;gap:44px}}
+</style>
+
+<div class="page">
+
+<header>
+  <span class="eyebrow">Knowledge graph · entity set</span>
+  <h1>Fund Admin Graph Ontology</h1>
+  <p class="lede">The object classes, edges and SurrealDB shape for the private-markets QC graph, worked out from a real quarter of investor-level ledger, the administrator's finished loader, and the side-letter demo. Every class below has an instance in that data, and the 6 July email is traced through the graph to the finding it produces on stage.</p>
+  <div class="meta">
+    <span>For <b>Fergus</b>, to settle the entity set in the shared repo</span>
+    <span>Ledger data <b>Q2 2026 investor-level GL → Corvus loader</b></span>
+    <span>Demo data <b>Kestrel Lammwick terms register, stages 0 to 2</b></span>
+    <span>Status <b>proposal for discussion</b></span>
+  </div>
+</header>
+
+<section>
+  <div class="head">
+    <span class="eyebrow">What the data actually contains</span>
+    <h2>One quarter and one demo, counted</h2>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="n">52</span><span class="l">legal entities in scope, of 79</span></div>
+    <div class="stat"><span class="n">470</span><span class="l">investor accounts</span></div>
+    <div class="stat"><span class="n">105</span><span class="l">crosswalk rows, 2 open gaps</span></div>
+    <div class="stat"><span class="n">597</span><span class="l">batches → 18,929 allocation lines</span></div>
+    <div class="stat"><span class="n">337</span><span class="l">term facts at v1, 18 investors</span></div>
+    <div class="stat"><span class="n">17</span><span class="l">delta rows from one email: 7 closed, 10 added</span></div>
+  </div>
+  <div class="prose">
+    <p>Those counts say where the weight is. Structure is small and stable. Reference data is medium and changes rarely. The ledger is large and arrives every quarter. The administrator's judgement, the part a QC agent has to reason about, lives in crosswalk rows, scope decisions and a handful of defaults. And the demo's whole argument rests on a few dozen term facts that carry two dates each.</p>
+  </div>
+</section>
+
+<section>
+  <div class="head">
+    <span class="eyebrow">The map</span>
+    <h2>Four columns and a process floor</h2>
+  </div>
+  <figure>
+    <div class="diagram-wrap">
+    <svg viewBox="0 0 1120 720" role="img" aria-label="Entity map: structure classes on the left (fund family, legal entity, investor account, organisation, position, deal); the ledger chain in the middle (batch, journal entry, transaction line, investor allocation); reference and rules on the right (batch type, rules and term facts, source account and trans type, crosswalk, target account and trans type); and a process floor below (project, gate run, finding, chunk, document, report or deliverable, decision). Arrows are labelled with the relationship.">
+      <defs>
+        <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+        </marker>
+      </defs>
+
+      <text class="band" x="40" y="44">STRUCTURE</text>
+      <text class="band" x="540" y="44">LEDGER</text>
+      <text class="band" x="820" y="44">REFERENCE · RULES · TERMS</text>
+      <text class="band" x="40" y="524">PROCESS · EVIDENCE</text>
+
+      <rect class="node" x="40" y="60" width="200" height="44"></rect>
+      <text class="name" x="140" y="87" text-anchor="middle">Fund Family</text>
+      <rect class="node" x="40" y="150" width="200" height="44"></rect>
+      <text class="name" x="140" y="177" text-anchor="middle">Legal Entity</text>
+      <rect class="node" x="40" y="240" width="200" height="44"></rect>
+      <text class="name" x="140" y="267" text-anchor="middle">Investor Account</text>
+      <rect class="node" x="40" y="350" width="200" height="60"></rect>
+      <text class="name" x="140" y="373" text-anchor="middle">Organisation</text>
+      <text class="sub" x="140" y="390" text-anchor="middle">investor · portfolio co · supplier</text>
+      <text class="sub" x="140" y="402" text-anchor="middle">bank · administrator · auditor</text>
+
+      <rect class="node" x="280" y="150" width="200" height="44"></rect>
+      <text class="name" x="380" y="177" text-anchor="middle">Position</text>
+      <rect class="node" x="280" y="240" width="200" height="44"></rect>
+      <text class="name" x="380" y="267" text-anchor="middle">Deal</text>
+
+      <rect class="node" x="540" y="60" width="220" height="44"></rect>
+      <text class="name" x="650" y="87" text-anchor="middle">Batch</text>
+      <rect class="node" x="540" y="150" width="220" height="44"></rect>
+      <text class="name" x="650" y="177" text-anchor="middle">Journal Entry</text>
+      <rect class="node" x="540" y="240" width="220" height="44"></rect>
+      <text class="name" x="650" y="267" text-anchor="middle">Transaction Line</text>
+      <rect class="node" x="540" y="330" width="220" height="44"></rect>
+      <text class="name" x="650" y="357" text-anchor="middle">Investor Allocation</text>
+
+      <rect class="node" x="820" y="60" width="260" height="44"></rect>
+      <text class="name" x="950" y="87" text-anchor="middle">Batch Type</text>
+      <rect class="node hinge" x="820" y="150" width="260" height="60"></rect>
+      <text class="name" x="950" y="173" text-anchor="middle">Rule · Term Fact</text>
+      <text class="sub" x="950" y="190" text-anchor="middle">rules: batch priority · supplier · allocation</text>
+      <text class="sub" x="950" y="202" text-anchor="middle">term facts: in force from · known since</text>
+      <rect class="node" x="820" y="240" width="260" height="44"></rect>
+      <text class="name" x="950" y="267" text-anchor="middle">GL Account + Trans Type · source</text>
+      <rect class="node hinge" x="820" y="330" width="260" height="60"></rect>
+      <text class="name" x="950" y="353" text-anchor="middle">Crosswalk</text>
+      <text class="sub" x="950" y="370" text-anchor="middle">source → target account + trans type</text>
+      <text class="sub" x="950" y="382" text-anchor="middle">status: exact · fallback · gap · approved</text>
+      <rect class="node" x="820" y="430" width="260" height="44"></rect>
+      <text class="name" x="950" y="457" text-anchor="middle">GL Account + Trans Type · target</text>
+
+      <rect class="node" x="40" y="540" width="200" height="44"></rect>
+      <text class="name" x="140" y="567" text-anchor="middle">Project</text>
+      <rect class="node" x="300" y="540" width="160" height="44"></rect>
+      <text class="name" x="380" y="567" text-anchor="middle">Gate Run</text>
+      <rect class="node" x="520" y="540" width="160" height="44"></rect>
+      <text class="name" x="600" y="567" text-anchor="middle">Finding</text>
+      <rect class="node" x="740" y="540" width="160" height="44"></rect>
+      <text class="name" x="820" y="567" text-anchor="middle">Chunk</text>
+      <rect class="node" x="940" y="540" width="140" height="60"></rect>
+      <text class="name" x="1010" y="563" text-anchor="middle">Document</text>
+      <text class="sub" x="1010" y="580" text-anchor="middle">side letter · LPA · email</text>
+      <text class="sub" x="1010" y="592" text-anchor="middle">statement · bank statement</text>
+      <rect class="node" x="300" y="640" width="160" height="60"></rect>
+      <text class="name" x="380" y="663" text-anchor="middle">Report · Deliverable</text>
+      <text class="sub" x="380" y="680" text-anchor="middle">fee schedule · CAS · loader</text>
+      <text class="sub" x="380" y="692" text-anchor="middle">content-hashed</text>
+      <rect class="node hinge" x="520" y="640" width="160" height="44"></rect>
+      <text class="name" x="600" y="667" text-anchor="middle">Decision</text>
+
+      <line class="edge" x1="140" y1="240" x2="140" y2="196" marker-end="url(#arw)"></line>
+      <text class="lbl" x="148" y="222">in</text>
+      <line class="edge" x1="140" y1="150" x2="140" y2="106" marker-end="url(#arw)"></line>
+      <text class="lbl" x="148" y="132">part of</text>
+      <line class="edge" x1="140" y1="284" x2="140" y2="348" marker-end="url(#arw)"></line>
+      <text class="lbl" x="148" y="322">of · investor role</text>
+      <line class="edge" x1="240" y1="172" x2="278" y2="172" marker-end="url(#arw)"></line>
+      <text class="lbl" x="259" y="164" text-anchor="middle">holds</text>
+      <line class="edge" x1="380" y1="194" x2="380" y2="238" marker-end="url(#arw)"></line>
+      <text class="lbl" x="388" y="222">of</text>
+      <polyline class="edge" points="380,284 380,380 242,380" marker-end="url(#arw)"></polyline>
+      <text class="lbl" x="310" y="372" text-anchor="middle">issued by</text>
+
+      <line class="edge" x1="650" y1="104" x2="650" y2="148" marker-end="url(#arw)"></line>
+      <text class="lbl" x="658" y="132">contains</text>
+      <line class="edge" x1="650" y1="194" x2="650" y2="238" marker-end="url(#arw)"></line>
+      <text class="lbl" x="658" y="222">contains</text>
+      <line class="edge" x1="650" y1="284" x2="650" y2="328" marker-end="url(#arw)"></line>
+      <text class="lbl" x="658" y="312">split by allocation rule</text>
+      <polyline class="edge" points="540,352 260,352 260,262 242,262" marker-end="url(#arw)"></polyline>
+      <text class="lbl" x="400" y="344" text-anchor="middle">for</text>
+
+      <line class="edge" x1="760" y1="82" x2="818" y2="82" marker-end="url(#arw)"></line>
+      <text class="lbl" x="789" y="74" text-anchor="middle">typed</text>
+      <line class="edge" x1="950" y1="150" x2="950" y2="106" marker-end="url(#arw)"></line>
+      <text class="lbl" x="958" y="132">chooses, by priority</text>
+      <line class="edge" x1="760" y1="262" x2="818" y2="262" marker-end="url(#arw)"></line>
+      <text class="lbl" x="789" y="254" text-anchor="middle">posts to</text>
+      <line class="edge" x1="950" y1="284" x2="950" y2="328" marker-end="url(#arw)"></line>
+      <text class="lbl" x="958" y="312">maps</text>
+      <line class="edge" x1="950" y1="390" x2="950" y2="428" marker-end="url(#arw)"></line>
+      <text class="lbl" x="958" y="414">to</text>
+
+      <polyline class="edge" points="40,562 20,562 20,172 38,172" marker-end="url(#arw)"></polyline>
+      <text class="lbl" x="12" y="380" text-anchor="middle" transform="rotate(-90 12 380)">scopes</text>
+      <line class="edge" x1="240" y1="562" x2="298" y2="562" marker-end="url(#arw)"></line>
+      <text class="lbl" x="269" y="554" text-anchor="middle">runs</text>
+      <line class="edge" x1="460" y1="562" x2="518" y2="562" marker-end="url(#arw)"></line>
+      <text class="lbl" x="489" y="554" text-anchor="middle">raises</text>
+      <line class="edge" x1="680" y1="562" x2="738" y2="562" marker-end="url(#arw)"></line>
+      <text class="lbl" x="709" y="554" text-anchor="middle">cites</text>
+      <line class="edge" x1="900" y1="562" x2="938" y2="562" marker-end="url(#arw)"></line>
+      <text class="lbl" x="919" y="554" text-anchor="middle">of</text>
+      <line class="edge" x1="380" y1="584" x2="380" y2="638" marker-end="url(#arw)"></line>
+      <text class="lbl" x="388" y="616">verifies</text>
+      <line class="edge" x1="600" y1="584" x2="600" y2="638" marker-end="url(#arw)"></line>
+      <text class="lbl" x="608" y="616">resolved by</text>
+      <polyline class="edge" points="680,662 820,662 820,586" marker-end="url(#arw)"></polyline>
+      <text class="lbl" x="750" y="654" text-anchor="middle">cites</text>
+      <polyline class="edge" points="140,584 140,672 298,672" marker-end="url(#arw)"></polyline>
+      <text class="lbl" x="220" y="664" text-anchor="middle">produces, versioned</text>
+      <line class="edge" x1="600" y1="540" x2="600" y2="376" marker-end="url(#arw)"></line>
+      <text class="lbl" x="608" y="462">about</text>
+    </svg>
+    </div>
+    <figcaption>Structure and reference are the slow-changing world the ledger posts into. The ledger chain runs batch → journal entry → transaction line → investor allocation, and each line reaches the target chart only through a crosswalk row. Findings and decisions sit on the process floor and point at any node above them, and both cite document chunks. The shaded nodes are where judgement and change live: term facts, the crosswalk, and decisions.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="head">
+    <span class="eyebrow">Demo fit</span>
+    <h2>The 6 July email, traced to the finding</h2>
+    <p class="prose">This is the stage-2 moment of the demo. Dana Whitlock at Trentcombe sends the amended side letter. The graph closes seven facts at 30 June and adds ten from 1 July. The administrator runs the Q3 fee on the June register, and the gate reports the overcharge with the clause behind it. Every box below is a class from the map above, so the ontology carries the demo without special cases.</p>
+  </div>
+  <figure>
+    <div class="diagram-wrap">
+    <svg viewBox="0 0 1120 500" role="img" aria-label="Trace of the demo email: the email attaches side letter v2, which supersedes side letter v1 and is chunked into clauses; a new term fact for the fee rate cites clause 2(a), is in force from 1 July 2026 and known since 6 July 2026, and closes the old fact that cited side letter v1; both facts are about the Trentcombe investor account in Kestrel Lammwick; the in-force facts are exported as a terms snapshot as of 30 September 2026; the gate run takes that snapshot and the administrator's Q3 fee schedule as inputs and raises the TC09 finding of a 9,296.43 overcharge.">
+      <rect class="node" x="40" y="60" width="200" height="72"></rect>
+      <text class="name" x="140" y="83" text-anchor="middle">Email</text>
+      <text class="sub" x="140" y="101" text-anchor="middle">from Dana Whitlock, Trentcombe</text>
+      <text class="sub" x="140" y="115" text-anchor="middle">received 6 Jul 2026 09:14</text>
+
+      <rect class="node" x="300" y="60" width="220" height="72"></rect>
+      <text class="name" x="410" y="83" text-anchor="middle">Document · side letter v2</text>
+      <text class="sub mono" x="410" y="101" text-anchor="middle">SL-TRENTCOMBE-2026-01</text>
+      <text class="sub" x="410" y="115" text-anchor="middle">amended and restated, effective 1 Jul 2026</text>
+
+      <rect class="node" x="300" y="170" width="220" height="72"></rect>
+      <text class="name" x="410" y="193" text-anchor="middle">Document · side letter v1</text>
+      <text class="sub mono" x="410" y="211" text-anchor="middle">SL-TRENTCOMBE-2024-01</text>
+      <text class="sub" x="410" y="225" text-anchor="middle">15 Mar 2024, superseded</text>
+
+      <rect class="node" x="580" y="60" width="200" height="72"></rect>
+      <text class="name" x="680" y="83" text-anchor="middle">Chunk</text>
+      <text class="sub" x="680" y="101" text-anchor="middle">clause 2(a): rate 0.75% p.a.</text>
+      <text class="sub" x="680" y="115" text-anchor="middle">also 2(b) · 2(c) · 5 · 6</text>
+
+      <rect class="node hinge" x="840" y="60" width="240" height="72"></rect>
+      <text class="name" x="960" y="83" text-anchor="middle">Term Fact · added</text>
+      <text class="sub mono" x="960" y="101" text-anchor="middle">mgmt_fee_rate_pa = 0.0075</text>
+      <text class="sub" x="960" y="115" text-anchor="middle">in force 1 Jul 2026 · known 6 Jul 2026</text>
+
+      <rect class="node hinge" x="840" y="170" width="240" height="72"></rect>
+      <text class="name" x="960" y="193" text-anchor="middle">Term Fact · closed</text>
+      <text class="sub mono" x="960" y="211" text-anchor="middle">mgmt_fee_rate_pa = 0.0085</text>
+      <text class="sub" x="960" y="225" text-anchor="middle">in force 15 Mar 2024 → 30 Jun 2026</text>
+
+      <rect class="node hinge" x="40" y="300" width="180" height="84"></rect>
+      <text class="name" x="130" y="323" text-anchor="middle">Finding · TC09 · tier a</text>
+      <text class="sub" x="130" y="341" text-anchor="middle">net fee overcharged</text>
+      <text class="sub mono" x="130" y="355" text-anchor="middle">USD 9,296.43</text>
+      <text class="sub" x="130" y="371" text-anchor="middle">+ TC01 · TC02 · TC05, tier b</text>
+
+      <rect class="node" x="280" y="300" width="220" height="72"></rect>
+      <text class="name" x="390" y="323" text-anchor="middle">Gate Run</text>
+      <text class="sub mono" x="390" y="341" text-anchor="middle">20260905-173942-1cc5d3</text>
+      <text class="sub" x="390" y="355" text-anchor="middle">as of 30 Sep 2026 · 11 checks · 2 hashes</text>
+
+      <rect class="node" x="560" y="300" width="220" height="72"></rect>
+      <text class="name" x="670" y="323" text-anchor="middle">Terms Snapshot</text>
+      <text class="sub mono" x="670" y="341" text-anchor="middle">terms_as_of(2254, 2026-09-30)</text>
+      <text class="sub" x="670" y="355" text-anchor="middle">19 rows · v2 · hashed</text>
+
+      <rect class="node" x="840" y="300" width="240" height="72"></rect>
+      <text class="name" x="960" y="323" text-anchor="middle">Investor Account</text>
+      <text class="sub" x="960" y="341" text-anchor="middle">Trentcombe Fund Investors LLC</text>
+      <text class="sub mono" x="960" y="355" text-anchor="middle">rfx 7335_02891 · corvus 18550</text>
+
+      <rect class="node" x="280" y="420" width="220" height="56"></rect>
+      <text class="name" x="390" y="443" text-anchor="middle">Report · Q3 fee schedule</text>
+      <text class="sub" x="390" y="460" text-anchor="middle">administrator draft, content-hashed</text>
+
+      <rect class="node" x="840" y="420" width="240" height="56"></rect>
+      <text class="name" x="960" y="443" text-anchor="middle">Legal Entity</text>
+      <text class="sub" x="960" y="460" text-anchor="middle">Kestrel Lammwick Co-Invest LP · corvus 2254</text>
+
+      <line class="edge" x1="240" y1="96" x2="298" y2="96" marker-end="url(#arw)"></line>
+      <text class="lbl" x="269" y="88" text-anchor="middle">attaches</text>
+      <line class="edge" x1="410" y1="132" x2="410" y2="168" marker-end="url(#arw)"></line>
+      <text class="lbl" x="418" y="154">supersedes</text>
+      <line class="edge" x1="520" y1="96" x2="578" y2="96" marker-end="url(#arw)"></line>
+      <text class="lbl" x="549" y="88" text-anchor="middle">chunks</text>
+      <line class="edge" x1="840" y1="96" x2="782" y2="96" marker-end="url(#arw)"></line>
+      <text class="lbl" x="811" y="88" text-anchor="middle">cites</text>
+      <line class="edge" x1="960" y1="132" x2="960" y2="168" marker-end="url(#arw)"></line>
+      <text class="lbl" x="968" y="154">closes</text>
+      <line class="edge" x1="840" y1="206" x2="522" y2="206" marker-end="url(#arw)"></line>
+      <text class="lbl" x="680" y="198" text-anchor="middle">cites clause 2(a) of v1</text>
+      <line class="edge" x1="960" y1="242" x2="960" y2="298" marker-end="url(#arw)"></line>
+      <text class="lbl" x="968" y="274">about, both facts</text>
+      <line class="edge" x1="840" y1="336" x2="782" y2="336" marker-end="url(#arw)"></line>
+      <text class="lbl" x="811" y="328" text-anchor="middle">in force</text>
+      <line class="edge" x1="560" y1="336" x2="502" y2="336" marker-end="url(#arw)"></line>
+      <text class="lbl" x="531" y="328" text-anchor="middle">input</text>
+      <line class="edge" x1="390" y1="420" x2="390" y2="374" marker-end="url(#arw)"></line>
+      <text class="lbl" x="398" y="400">input</text>
+      <line class="edge" x1="280" y1="336" x2="222" y2="336" marker-end="url(#arw)"></line>
+      <text class="lbl" x="251" y="328" text-anchor="middle">raises</text>
+      <line class="edge" x1="960" y1="372" x2="960" y2="418" marker-end="url(#arw)"></line>
+      <text class="lbl" x="968" y="398">in</text>
+    </svg>
+    </div>
+    <figcaption>Read it right to left from the finding: the gate run names the snapshot it used and the schedule it checked, the snapshot is the in-force facts for the entity on the as-of date, each fact names the clause it rests on, the clause sits in the letter that superseded the old one, and the letter arrived attached to an email from a named person. That walk is the provenance panel on screen 6. The email is a Document with kind email, not a new class.</figcaption>
+  </figure>
+
+  <div class="seam">
+    <h3>The seam the demo depends on</h3>
+    <p><code>terms_as_of(entity_id, as_of_date)</code> returns rows in exactly the columns of <code>terms_table_v1.csv</code>, plus <code>recorded_at</code> and a <code>fact_id</code>. The gate never queries the graph directly; it reads this export. The graph is done for the demo when the export for 30 June 2026 equals terms table v1 and for 30 September equals v2, row for row. In this ontology that export is one query over Term Fact filtered by validity, pivoted from long to wide. Nothing else on the page is on the critical path.</p>
+  </div>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>Demo moment</th><th>What the graph must answer</th><th>Path through the ontology</th><th>Fit</th></tr></thead>
+    <tbody>
+      <tr><td>Stage 0 · load v1</td><td>Load 337 facts for 18 investors and the entity defaults</td><td>Investor Account <em>in</em> Legal Entity; Term Facts on both, each citing an LPA or side-letter clause</td><td><span class="ok">Fits</span></td></tr>
+      <tr><td>Stage 0 · query</td><td>Trentcombe fee rate on 15 May 2026 → 0.0085 with the side letter and clause</td><td>Term Fact where valid_from ≤ date ≤ valid_to, <em>cites</em> Chunk <em>of</em> Document</td><td><span class="ok">Fits</span></td></tr>
+      <tr><td>Stage 1 · run B</td><td>Export terms_as_of(2254, 30 Jun 2026) equal to terms table v1</td><td>Terms Snapshot built from in-force Term Facts for every Investor Account in the entity; entity defaults fill gaps</td><td><span class="ok">Fits</span></td></tr>
+      <tr><td>Stage 2 · email</td><td>Apply the 17-row delta: close 7 facts at 30 June, add 10 from 1 July, stamp when they were learned</td><td>Term Fact close and add with two clocks; Document v2 <em>supersedes</em> v1, <em>received via</em> the Email; Email <em>from</em> a Person at an Organisation</td><td><span class="ok">Fits</span></td></tr>
+      <tr><td>Stage 2 · query</td><td>Same question on 15 August 2026 → 0.0075, provenance to v2 and to the email</td><td>Same Term Fact query, different date; walk cites → Document → received via → Email</td><td><span class="ok">Fits</span></td></tr>
+      <tr><td>Stage 2 · run C</td><td>Record the run: as-of, snapshot hash, schedule hash, 11 results with tiers; click the finding, walk back to the email</td><td>Gate Run with two hashes <em>verifies</em> Report and <em>raises</em> Findings; each Check Result carries status, tier and amount</td><td><span class="ok">Fits</span></td></tr>
+      <tr><td>Before the demo</td><td>Contract test: export equals fixture, cell for cell</td><td>The pivot query in the SurrealDB section; the fixture columns are the predicate list</td><td><span class="ok">Fits</span></td></tr>
+      <tr><td>Stretch</td><td>Model extracts the delta from the email; a person confirms before it becomes fact</td><td>Proposed Term Facts with no valid_from until a Decision approves them; the Decision <em>cites</em> the chunk and names the approver</td><td><span class="gap">Fits, needs the Decision step wired</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="head" style="margin-top:6px">
+    <h3>The demo's triple vocabulary, mapped</h3>
+    <p class="prose">The staging files use a neutral subject, predicate, object shape. Each element lands on one ontology construct, so loading them is a translation, not a redesign.</p>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>In the triples</th><th>In the ontology</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td><code>investor:&lt;RFX ID&gt;</code></td><td>Investor Account, <em>identified by</em> an Identifier with system rfx</td><td>The RFX ref is the investor in the vehicle, and it joins to the loader through the Corvus specific ID</td></tr>
+      <tr><td><code>invests_in entity:2254</code></td><td>Investor Account <em>in</em> Legal Entity; 2254 is an Identifier with system corvus</td><td>—</td></tr>
+      <tr><td><code>target_account_id</code></td><td>A second Identifier on the same Investor Account, system corvus</td><td>Equals Investor Account ID in the loader</td></tr>
+      <tr><td><code>mgmt_fee_rate_pa</code>, <code>fee_basis</code>, <code>fee_inside_commitment</code>, <code>fee_offset_pct</code>, <code>fee_exempt</code>, <code>mfn</code>, <code>cas_deadline_days</code></td><td>Term Facts on the Investor Account; predicate is the term name</td><td>Entity-level defaults such as <code>mgmt_fee_rate_pa_default</code> are Term Facts on the Legal Entity, overridden by the account's own</td></tr>
+      <tr><td><code>commitment</code>, <code>commitment_share</code>, <code>called_31mar2026</code>, <code>unfunded_31mar2026</code></td><td>Term Facts too, with the date in the predicate becoming valid_from</td><td>Keeps the fixture loadable unchanged; a later model can move balances to Investor Allocation aggregates</td></tr>
+      <tr><td><code>notices_contact</code>, <code>notices_email</code></td><td>Term Facts whose object is a Person, with a notices role at the Organisation</td><td>Literal strings in the fixture; a Person node lets the retired contact be closed, not deleted</td></tr>
+      <tr><td><code>governed_by document:&lt;ref&gt;</code></td><td>Investor Account <em>governed by</em> Document</td><td>Also a dated fact, closed when v2 arrives</td></tr>
+      <tr><td><code>rdf:type SideLetter</code>, <code>supersedes</code>, <code>received_via email:&lt;id&gt;</code></td><td>Document kind; Document <em>supersedes</em> Document; Document <em>received via</em> Document of kind email</td><td>The email is the existing <code>document</code> table with a kind and sender fields</td></tr>
+      <tr><td><code>valid_from</code>, <code>valid_to</code>, <code>operation close | add</code>, <code>version</code></td><td>Fact validity, the close and add operations, and a version label</td><td><code>recorded_at</code> is the second clock, stamped on load</td></tr>
+      <tr><td><code>source_document</code>, <code>source_clause</code></td><td>Term Fact <em>cites</em> Chunk; falls back to the Document when no chunk exists</td><td>Chunk IDs come from the ingestion service already in the repo</td></tr>
+      <tr><td><code>run:&lt;id&gt; rdf:type GateRun</code>, <code>gate</code>, <code>entity</code>, <code>as_of</code>, <code>schedule_sha256</code>, <code>terms_snapshot_sha256</code>, <code>result:TCxx</code></td><td>Gate Run with those fields; each result a Check Result with status, tier and amount; a FAIL becomes a Finding</td><td>The gate already writes this shape to <code>runs/run_triples.csv</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="head">
+    <span class="eyebrow">Class inventory</span>
+    <h2>Structure</h2>
+    <p class="prose">Parties and the vehicles they hold. Small, stable, and the thing everything else hangs off.</p>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Class</th><th>What it is</th><th>Instance in the data</th><th>Key fields</th><th>Source of truth</th></tr></thead>
+    <tbody>
+      <tr><td>Fund Family</td><td>Programme or structure grouping of entities</td><td>Family <code>Co-Investment</code>; structure codes such as <code>V6</code>, <code>D9</code></td><td>code, name</td><td>Entity Listing</td></tr>
+      <tr><td>Legal Entity</td><td>The accounting unit: own currency, chart, bank accounts, IDs in each system, entity-level default terms</td><td>Kestrel Lammwick Co-Invest LP, USD, Corvus 2254, 18 investors. 79 entities in the GL, 52 in scope</td><td>name, currency, entity type, tranche, migration decision</td><td>Entity Listing, LE Mapping</td></tr>
+      <tr><td>Vehicle</td><td>The wrapper an investor subscribes through; almost always the entity itself</td><td>3 of 52 differ from the entity name only by punctuation</td><td>name, entity</td><td>GL</td></tr>
+      <tr><td>Investor Account</td><td>One investor's stake in one legal entity. The unit of allocation, terms, fees and statements</td><td>Trentcombe Fund Investors LLC in Lammwick: registrar ref <code>7335_02891</code>, Corvus specific ID 18550, about 7.7 percent. 470 in scope</td><td>external ref, common ID, specific ID, commitment, closing date</td><td>Investors List, Investor Mapping</td></tr>
+      <tr><td>Organisation</td><td>Any party, with typed roles rather than one class per role</td><td>Trentcombe as investor, HOF as bank and supplier, Caldthorpe as tax adviser, Kestrel Lammwick GP LLC as general partner</td><td>legal name, roles, jurisdiction</td><td>Suppliers, Deals and Investors lists</td></tr>
+      <tr><td>Person</td><td>Preparer, reviewer, approver, signatory, notices contact, fund manager. Absent from the ledger, present in the process and the correspondence</td><td>Dana Whitlock, Head of Fund Operations, who replaces Morgan Ashby as notices contact from 1 July 2026</td><td>name, organisation, role, valid dates</td><td>side letters, emails, process records</td></tr>
+      <tr><td>Deal</td><td>An investment held by one or more entities</td><td>Chalbury HoldCo LP, Corvus deal 5175, held by 9 entities</td><td>name per system, currency, issuer</td><td>Deal Mapping</td></tr>
+      <tr><td>Position</td><td>The instrument inside a deal. The ledger references this, not the company</td><td>Renwold Topco: ordinary shares vs preference shares; Eddbeck Topco: shares vs loan</td><td>instrument type, currency, IDs</td><td>Deal Mapping</td></tr>
+      <tr><td>Bank Account</td><td>An entity's cash account by purpose</td><td><code>7144 - Income</code>, <code>7144 - Investment</code></td><td>entity, purpose, currency</td><td>Suppliers List</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="head">
+    <h2>Accounting reference and crosswalks</h2>
+    <p class="prose">Two charts of accounts and the bridge between them. This is where most of the migration's judgement was spent.</p>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Class</th><th>What it is</th><th>Instance in the data</th><th>Key fields</th><th>Source of truth</th></tr></thead>
+    <tbody>
+      <tr><td>System</td><td>A ledger or registry that issues identifiers</td><td>Helio / Kestrel as source, Corvus / Verado II as target, the registrar behind the RFX refs</td><td>name, role</td><td>README, mapping sheets</td></tr>
+      <tr><td>Identifier</td><td>An object's ID in one system. Never stored bare</td><td>Legal entity 2254 in Corvus; investor <code>7335_02891</code> at the registrar; the same account is 18550 in Corvus</td><td>system, value, object</td><td>every mapping sheet</td></tr>
+      <tr><td>GL Account</td><td>An account in a chart</td><td><code>10010 - Cash</code> in source, <code>10000 - Cash</code> in target</td><td>code, name, account type, system</td><td>Corvus CoA, CoA Mapping</td></tr>
+      <tr><td>Trans Type</td><td>A posting type under an account, with a debit or credit nature</td><td><code>Unrealised Gain: Investments</code>, credit-type. 1,050 in the target chart</td><td>name, account, debit/credit, multi-currency, quantity flag</td><td>Corvus CoA</td></tr>
+      <tr><td>Batch Type</td><td>A batch classification carrying a priority</td><td>Partner Transfer −1, Call 1, Distribution 2 … Memo 13. 14 types, 8 without a priority</td><td>name, priority</td><td>Batch Preference</td></tr>
+      <tr><td>Currency · Period</td><td>Small enumerations every amount and event hangs on</td><td>USD, EUR, GBP, NOK. Q2 2026, with GL date and effective date kept apart</td><td>code; start, end</td><td>GL</td></tr>
+      <tr><td>Crosswalk <span class="tag">hinge</span></td><td>One row bridging a source account + trans type to a target account, default and debit trans type, default batch type, UDF, supplier and quantity flag, with an approval status</td><td>105 rows. Two open gaps, one ambiguous: <code>30050 / Expense: Legal &amp; Professional Fees</code> has two candidate targets</td><td>status, proposed by, approved by, valid from</td><td>CoA Mapping, Mapping Gaps</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="head">
+    <h2>Rules and term facts</h2>
+    <p class="prose">Anything that changes how a number is computed or where it lands. Each one carries two dates and points at the document it came from, or the QC gate cannot say why.</p>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Class</th><th>What it is</th><th>Instance in the data</th><th>Key fields</th><th>Source of truth</th></tr></thead>
+    <tbody>
+      <tr><td>Term Fact <span class="tag">hinge</span></td><td>One term for one subject: subject, predicate, value, in force from and to, known since, version. Never deleted, only closed</td><td>Trentcombe <code>mgmt_fee_rate_pa</code> 0.0085 from 15 Mar 2024, closed 30 Jun 2026; 0.0075 from 1 Jul 2026, known 6 Jul 2026, clause 2(a)</td><td>subject, predicate, object, valid_from, valid_to, recorded_at, version, cites</td><td>side letters, LPA, the triples files</td></tr>
+      <tr><td>Rule</td><td>A deterministic processing policy with the same two clocks</td><td>Batch-type override: the lowest priority number across a batch wins. Zero-row exclusion when both currencies are nil. Mandatory supplier on tax and legal fees</td><td>statement, scope, valid_from, provenance</td><td>Tasks sheet, CoA Mapping flags</td></tr>
+      <tr><td>Allocation Rule</td><td>How an entity-level amount splits across investor accounts</td><td>By Commitment &amp; Closing Date, Non-Stroudbeck, J5 Expense Split. Six in source, collapsed to one direct rule in the loader</td><td>method, parameters, entity</td><td>GL</td></tr>
+      <tr><td>Terms Snapshot</td><td>The in-force facts for one entity on one date, pivoted wide and hashed. What the gate actually consumes</td><td><code>terms_as_of(2254, 2026-09-30)</code>: 19 rows, version v2</td><td>entity, as_of, hash, produced_at</td><td>graph export</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="head">
+    <h2>Ledger events</h2>
+    <p class="prose">The quarterly flood. Model the hierarchy, then decide deliberately which levels become graph nodes.</p>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Class</th><th>What it is</th><th>Instance in the data</th><th>Key fields</th><th>Source of truth</th></tr></thead>
+    <tbody>
+      <tr><td>Batch</td><td>A posting unit with one batch type, the level the override rule works at</td><td>597 in scope, such as <code>Valuation Removal - 30 Jun 2026</code></td><td>source ID, loader index, type, comments, GL date</td><td>GL, loader</td></tr>
+      <tr><td>Journal Entry</td><td>A balanced set of lines inside a batch</td><td>Index 1 of batch 521752</td><td>batch, index</td><td>GL</td></tr>
+      <tr><td>Transaction Line</td><td>One account posting at entity level</td><td>Debit 40030, transaction 201, USD, with deal, position, supplier, bank account and quantity where relevant</td><td>account, trans type, amounts in both currencies, debit/credit, deal, position</td><td>GL</td></tr>
+      <tr><td>Investor Allocation</td><td>A line's share for one investor account. This is what the loader row is</td><td>18,929 rows; 39 nil rows excluded</td><td>investor account, amounts, is debit, quantity</td><td>loader</td></tr>
+      <tr><td>Event kinds</td><td>Call, distribution, valuation, cashbook entry, partner transfer</td><td>Not separate classes. They are Batch Type values, so keep them as an attribute and query on it</td><td>—</td><td>Batch Preference</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="head">
+    <h2>Process, reports and evidence</h2>
+    <p class="prose">Where the QC gate lives. Everything here is an instance scoped to a project and a period, never a project-specific class.</p>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Class</th><th>What it is</th><th>Instance in the data</th><th>Key fields</th><th>Source of truth</th></tr></thead>
+    <tbody>
+      <tr><td>Project</td><td>A bounded piece of work over a period and a scope of entities</td><td>Tranche 1 migration; Q2-26 loader; the Q3-26 fee run for Lammwick</td><td>period, scope, owner, status</td><td>Tasks sheet</td></tr>
+      <tr><td>Report · Deliverable</td><td>A versioned output the gate checks or the project ships, identified by content hash</td><td>The Q3 fee and commitment schedule, administrator draft; the loader v4c and its rebuild</td><td>kind, version, hash, produced by</td><td>output folders</td></tr>
+      <tr><td>Report Line</td><td>One row of a report for one investor account</td><td>Trentcombe's Q3 line: rate applied 0.0085, basis Commitment, offset 80 percent, net fee 23,695.79</td><td>report, investor account, values</td><td>the schedule</td></tr>
+      <tr><td>Check</td><td>A check definition with its tier</td><td>TC09, tier a: net fee equals the fee recomputed from the register. Eleven terms checks, 54 loader checks</td><td>id, statement, tier</td><td>terms_checks.py, eval_loader.py</td></tr>
+      <tr><td>Gate Run</td><td>One execution of a check set against one report and one terms snapshot</td><td>Run 1cc5d3: as of 30 Sep 2026, schedule sha 2830…, snapshot v2, 7 pass, 4 fail, 18,592.86 at stake</td><td>as_of, entity, schedule hash, snapshot hash, mode, run_at</td><td><code>runs/</code></td></tr>
+      <tr><td>Check Result</td><td>One check's outcome inside a run</td><td>TC01 FAIL tier b, 3,479.00: rate applied 0.0085 against register 0.0075</td><td>run, check, status, tier, amount, subject</td><td><code>runs/run_triples.csv</code></td></tr>
+      <tr><td>Finding</td><td>A failed result or an exception raised for action, pointing at any node</td><td>TC09 overcharge 9,296.43; 34 defaulted bank accounts in the loader; the ambiguous crosswalk</td><td>severity, status, about, cites</td><td>run records, eval report</td></tr>
+      <tr><td>Decision <span class="tag">hinge</span></td><td>A recorded judgement that changed the output, or approved a fact before it went in force</td><td>Kestrel DEK 1 in scope though absent from the Entity Listing; an administrator confirming an extracted side-letter change</td><td>subject, chosen option, rationale, decided by, cites</td><td>build notes, Mapping Gaps approval</td></tr>
+      <tr><td>Document</td><td>An ingested source, already a table in the repo. Kind covers side letter, LPA, email, statement, bank statement</td><td>Side letter SL-TRENTCOMBE-2026-01; the 6 July email from d.whitlock@trentcombe-fi.example</td><td>SHA-256, kind, filename, parties, received_at, sender for emails</td><td><code>document</code> table</td></tr>
+      <tr><td>Chunk</td><td>The stable citation unit the ingestion service already emits</td><td>Clause 2(a) of the amended letter</td><td>stable ID, page or sheet, text</td><td>ingestion context records</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="head">
+    <span class="eyebrow">Modelling rules</span>
+    <h2>Seven decisions to make once</h2>
+  </div>
+  <div class="cards">
+    <div class="card hinge"><h3>Two clocks, never delete</h3><p>Every term fact, rule and crosswalk row carries in-force dates and a known-since timestamp. Changes close the old fact and add a new one; nothing is deleted.</p><p class="why">Received 6 July, effective 1 July answers both of the fund manager's questions: the Q2 run on 30 June was not wrong, and the Q3 run must change. Any store can hold two date columns; the discipline is the point.</p></div>
+    <div class="card"><h3>Project is an instance, not a schema</h3><p>A Q2-26 reconciliation is a node linked to a period, a scope, tasks, decisions, findings and a deliverable. Its contents are shared classes tagged with the project.</p><p class="why">Project-specific classes kill the cross-period questions: did this gap recur, what did we decide last quarter, which accounts have had three exceptions running.</p></div>
+    <div class="card"><h3>The crosswalk is a node</h3><p>Each mapping row is a first-class record with a status and an approver, and every ledger line reaches the target chart through it.</p><p class="why">In v4c the two gaps, the ambiguous fallback and the 389 trans-type-only mappings are the judgement. A lookup table hides them; a node lets a finding point at one.</p></div>
+    <div class="card"><h3>Everything actionable cites a chunk</h3><p>Term facts, findings, decisions and rules all point at chunks of documents, using the stable chunk IDs the ingestion service already produces.</p><p class="why">That single edge turns the existing ingestion layer into the evidence base for the QC half without extraction or embeddings, and it is what the provenance panel walks.</p></div>
+    <div class="card"><h3>The gate reads a snapshot, not the graph</h3><p>A terms snapshot is a hashed export of the in-force facts for one entity on one date. Every gate run records which snapshot and which report it used.</p><p class="why">Two hashes make every past statement re-derivable and let the graph fail on stage without the gate noticing.</p></div>
+    <div class="card"><h3>Lines stay in tables</h3><p>Keep transaction lines and allocations as SurrealDB records with plain fields. Put batches, aggregates per account, runs and findings in the graph.</p><p class="why">Thirty-four thousand lines a quarter as graph nodes make the graph a slow copy of the GL. SurrealDB does both shapes, so use each where it is cheap.</p></div>
+    <div class="card"><h3>Identifiers are system-scoped</h3><p>An identifier record carries the system and the value. Objects are related to their identifiers rather than storing a bare number.</p><p class="why">The registrar, Corvus and Helio each issued IDs for the same investor account; the loader is the act of translating between them.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="head">
+    <span class="eyebrow">SurrealDB shape</span>
+    <h2>How it lands in the database</h2>
+    <p class="prose">A sketch of the node tables, the fact table with two clocks, the edges as relation tables, and the three operations the demo performs. Syntax follows SurrealDB 2.x; check the exact keywords against the version deployed on the VM before relying on them.</p>
+  </div>
+  <div class="split">
+<pre><span class="c">-- Nodes: plain tables, one per class</span>
+<span class="k">DEFINE TABLE</span> legal_entity SCHEMAFULL;
+<span class="k">DEFINE FIELD</span> name     ON legal_entity TYPE string;
+<span class="k">DEFINE FIELD</span> currency ON legal_entity TYPE string;
+
+<span class="k">DEFINE TABLE</span> investor_account SCHEMAFULL;
+<span class="k">DEFINE FIELD</span> name ON investor_account TYPE string;
+
+<span class="c">-- Identifiers: system-scoped, unique per system</span>
+<span class="k">DEFINE TABLE</span> identifier SCHEMAFULL;
+<span class="k">DEFINE FIELD</span> system ON identifier TYPE string;  <span class="c">-- corvus | helio | rfx</span>
+<span class="k">DEFINE FIELD</span> value  ON identifier TYPE string;
+<span class="k">DEFINE INDEX</span> uniq_identifier ON identifier FIELDS system, value UNIQUE;
+
+<span class="c">-- Term facts: two clocks, never deleted</span>
+<span class="k">DEFINE TABLE</span> term_fact SCHEMAFULL;
+<span class="k">DEFINE FIELD</span> subject     ON term_fact TYPE record&lt;investor_account|legal_entity&gt;;
+<span class="k">DEFINE FIELD</span> predicate   ON term_fact TYPE string;   <span class="c">-- mgmt_fee_rate_pa, fee_basis …</span>
+<span class="k">DEFINE FIELD</span> object      ON term_fact TYPE any;
+<span class="k">DEFINE FIELD</span> valid_from  ON term_fact TYPE datetime;           <span class="c">-- in force from</span>
+<span class="k">DEFINE FIELD</span> valid_to    ON term_fact TYPE option&lt;datetime&gt;;   <span class="c">-- closed, not deleted</span>
+<span class="k">DEFINE FIELD</span> recorded_at ON term_fact TYPE datetime;           <span class="c">-- known since</span>
+<span class="k">DEFINE FIELD</span> version     ON term_fact TYPE string;
+<span class="k">DEFINE INDEX</span> fact_lookup ON term_fact FIELDS subject, predicate, valid_from;
+
+<span class="c">-- Documents: the existing table, plus kind and email fields</span>
+<span class="k">DEFINE FIELD</span> kind        ON document TYPE option&lt;string&gt;;  <span class="c">-- side_letter | lpa | email | statement</span>
+<span class="k">DEFINE FIELD</span> received_at ON document TYPE option&lt;datetime&gt;;
+<span class="k">DEFINE FIELD</span> sender      ON document TYPE option&lt;record&lt;person&gt;&gt;;
+
+<span class="c">-- The gate's audit trail</span>
+<span class="k">DEFINE TABLE</span> gate_run SCHEMAFULL;
+<span class="k">DEFINE FIELD</span> as_of                ON gate_run TYPE datetime;
+<span class="k">DEFINE FIELD</span> entity               ON gate_run TYPE record&lt;legal_entity&gt;;
+<span class="k">DEFINE FIELD</span> schedule_sha256       ON gate_run TYPE string;
+<span class="k">DEFINE FIELD</span> terms_snapshot_sha256 ON gate_run TYPE option&lt;string&gt;;
+<span class="k">DEFINE FIELD</span> mode                 ON gate_run TYPE string;   <span class="c">-- terms | arithmetic-only</span>
+<span class="k">DEFINE TABLE</span> check_result SCHEMAFULL;
+<span class="k">DEFINE FIELD</span> run    ON check_result TYPE record&lt;gate_run&gt;;
+<span class="k">DEFINE FIELD</span> check  ON check_result TYPE string;   <span class="c">-- TC01 … TC10</span>
+<span class="k">DEFINE FIELD</span> status ON check_result TYPE string ASSERT $value IN ['PASS','FAIL','SKIPPED'];
+<span class="k">DEFINE FIELD</span> tier   ON check_result TYPE string;
+<span class="k">DEFINE FIELD</span> amount ON check_result TYPE option&lt;decimal&gt;;</pre>
+<pre><span class="c">-- Edges: relation tables with typed ends</span>
+<span class="k">DEFINE TABLE</span> in_entity     TYPE RELATION IN investor_account OUT legal_entity;
+<span class="k">DEFINE TABLE</span> identified_by TYPE RELATION
+  IN legal_entity|investor_account|deal|position|gl_account OUT identifier;
+<span class="k">DEFINE TABLE</span> cites         TYPE RELATION IN term_fact|finding|decision|rule OUT chunk|document;
+<span class="k">DEFINE TABLE</span> closes        TYPE RELATION IN term_fact OUT term_fact;
+<span class="k">DEFINE TABLE</span> supersedes    TYPE RELATION IN document OUT document;
+<span class="k">DEFINE TABLE</span> received_via  TYPE RELATION IN document OUT document;  <span class="c">-- letter -> email</span>
+<span class="k">DEFINE TABLE</span> governed_by   TYPE RELATION IN investor_account OUT document;
+<span class="k">DEFINE TABLE</span> maps_from     TYPE RELATION IN crosswalk OUT trans_type;
+<span class="k">DEFINE TABLE</span> maps_to       TYPE RELATION IN crosswalk OUT trans_type;
+<span class="k">DEFINE TABLE</span> allocated_for TYPE RELATION IN investor_allocation OUT investor_account;
+<span class="k">DEFINE TABLE</span> verifies      TYPE RELATION IN gate_run OUT report;
+<span class="k">DEFINE TABLE</span> raises        TYPE RELATION IN gate_run OUT finding;
+<span class="k">DEFINE TABLE</span> about         TYPE RELATION
+  IN finding OUT investor_account|crosswalk|batch|report_line|legal_entity;
+
+<span class="c">-- Stage 0: load a v1 fact with its provenance</span>
+<span class="k">LET</span> $f = <span class="k">CREATE ONLY</span> term_fact SET
+  subject = investor_account:⟨7335_02891⟩, predicate = 'mgmt_fee_rate_pa', object = 0.0085,
+  valid_from = d'2024-03-15', recorded_at = d'2024-03-15', version = 'v1';
+<span class="k">RELATE</span> $f-&gt;cites-&gt;document:⟨SL-TRENTCOMBE-2024-01⟩;
+
+<span class="c">-- Stage 2: apply the delta. Close, then add, then link.</span>
+<span class="k">UPDATE</span> term_fact SET valid_to = d'2026-06-30'
+  WHERE subject = investor_account:⟨7335_02891⟩
+    AND predicate = 'mgmt_fee_rate_pa' AND valid_to IS NONE;
+<span class="k">LET</span> $new = <span class="k">CREATE ONLY</span> term_fact SET
+  subject = investor_account:⟨7335_02891⟩, predicate = 'mgmt_fee_rate_pa', object = 0.0075,
+  valid_from = d'2026-07-01', recorded_at = d'2026-07-06T09:14:00+01:00', version = 'v2';
+<span class="k">RELATE</span> $new-&gt;cites-&gt;chunk:⟨SL-TRENTCOMBE-2026-01·2a⟩;
+<span class="k">RELATE</span> document:⟨SL-TRENTCOMBE-2026-01⟩-&gt;supersedes-&gt;document:⟨SL-TRENTCOMBE-2024-01⟩;
+<span class="k">RELATE</span> document:⟨SL-TRENTCOMBE-2026-01⟩-&gt;received_via-&gt;document:⟨email-20260706091400⟩;</pre>
+  </div>
+</section>
+
+<section>
+  <div class="head">
+    <span class="eyebrow">The test</span>
+    <h2>Three questions the gate must answer in a few hops</h2>
+    <p class="prose">The first two are asked on stage. If a class sits on none of these paths it is probably decoration. Query shapes are illustrative and untested against a live instance.</p>
+  </div>
+  <div class="split">
+    <div class="qa">
+      <h3>What was Trentcombe's fee rate on 15 May, and on 15 August?</h3>
+<pre><span class="c">-- run once with each date; expect 0.0085 then 0.0075</span>
+SELECT object, valid_from, recorded_at, -&gt;cites-&gt;chunk AS clause
+FROM term_fact
+WHERE subject = investor_account:⟨7335_02891⟩
+  AND predicate = 'mgmt_fee_rate_pa'
+  AND valid_from &lt;= $on
+  AND (valid_to IS NONE OR valid_to &gt;= $on);</pre>
+      <p class="why">One hop for the value, one more for the clause, two more through the document to the email. That walk is the provenance panel.</p>
+    </div>
+    <div class="qa">
+      <h3>Export the terms snapshot the gate will check against</h3>
+<pre><span class="c">-- terms_as_of(2254, 2026-09-30): long form; pivot to the fixture columns on export</span>
+SELECT subject, predicate, object, id AS fact_id, recorded_at
+FROM term_fact
+WHERE subject-&gt;in_entity-&gt;legal_entity CONTAINS legal_entity:⟨2254⟩
+  AND valid_from &lt;= $as_of
+  AND (valid_to IS NONE OR valid_to &gt;= $as_of);
+<span class="c">-- hash the pivoted rows; that hash goes on the gate_run</span></pre>
+      <p class="why">This is the seam. The contract test compares its output with terms table v1 or v2, cell for cell.</p>
+    </div>
+    <div class="qa">
+      <h3>Which fee runs used Trentcombe's old offset?</h3>
+<pre>SELECT id, as_of, terms_snapshot_sha256, -&gt;verifies-&gt;report AS report
+FROM gate_run
+WHERE entity = legal_entity:⟨2254⟩
+  AND as_of &gt;= d'2026-07-01'
+  AND terms_snapshot_sha256 != $v2_snapshot_hash;</pre>
+      <p class="why">Answerable only because every run records the snapshot hash it consumed. This is the question the audience asks after the demo.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="head">
+    <span class="eyebrow">Open for Fergus</span>
+    <h2>Five things to decide together</h2>
+  </div>
+  <ol class="questions">
+    <li><b>Both clocks or one.</b> The store should hold valid dates and recorded_at on every fact. If it can only hold one, keep valid dates on the fact and put recorded_at on the document node, and agree that before the fixture is loaded.</li>
+    <li><b>The maker-checker step.</b> When a model extracts the delta from the email, the extracted facts should sit without a valid_from until a Decision node approves them, and the approval itself is a fact with a person on it. For the demo the pre-built delta is the fallback.</li>
+    <li><b>Run records in the graph or as files.</b> The gate already writes its runs in triple shape. Loading them makes the third question above a live query; leaving them as files is fine for the demo.</li>
+    <li><b>Where the lines live.</b> Ledger lines and allocations as SurrealDB records alongside the graph, or does the graph hold aggregates and point back at the loader file by batch, journal entry, transaction and investor?</li>
+    <li><b>Investor identity.</b> Organisation carries the Corvus common ID, Investor Account the specific ID and the registrar ref. Agree the merge key when names differ between systems, which happens in about one row in a hundred of the investor mapping.</li>
+  </ol>
+</section>
+
+<footer>
+  <span>Grounded in the Q2 2026 investor-level GL and the Tranche 1 verified loader v4c from the Ylookup hackathon dataset, the Claude rebuild of 5 September 2026 that reconciles to it on every column except batch numbering, and the terms and side-letter demo in the same output folder (its spec, runbook, triples files and integration design note). Counts are from those builds. The demo's commitments, side letters, people and email are synthetic on top of real anonymised investors.</span>
+  <span>The <code>document</code> table and the stable chunk IDs refer to what the ingestion service in the shared repo already writes; nothing else here exists in the database yet.</span>
+</footer>
+
+</div>
