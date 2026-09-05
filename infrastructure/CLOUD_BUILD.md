@@ -8,11 +8,13 @@ Terraform manages infrastructure and IAM; Cloud Build manages the deployed conta
 
 ## GitHub connection
 
-The Terraform-managed `github` connection requires a one-time browser authorization with GitHub. Authorize the Google Cloud Build GitHub App for `Fergus-MW/private-markets-hack`. No GitHub personal access token is stored in the repo.
+The Terraform-managed `github` connection requires a one-time browser authorization with GitHub. The provider omits an empty GitHub configuration on initial creation, so bootstrap the connection using `gcloud builds connections create github github --project=private-markets-hack --region=europe-west2`, then import it with `terraform -chdir=infrastructure import google_cloudbuildv2_connection.github projects/private-markets-hack/locations/europe-west2/connections/github`. Authorize the Google Cloud Build GitHub App for `Fergus-MW/private-markets-hack`. No GitHub personal access token is stored in the repo.
 
 ```sh
 gcloud builds connections describe github --project=private-markets-hack --region=europe-west2
 ```
+
+Connection setup also requires the Cloud Build service agent to have `secretmanager.secrets.create` and `secretmanager.secrets.setIamPolicy`; the custom role and binding are defined in `cloudbuild.tf`. These project-level permissions require explicit approval before applying them.
 
 Follow `installationState.actionUri` until the state is `COMPLETE`. Set `enable_github_trigger = true` in the local `infrastructure/terraform.tfvars`, then plan and apply Terraform to register the repository and create the `ingestion-main` trigger. The pipeline file must be pushed to `main` before using the trigger.
 

@@ -25,6 +25,7 @@ resource "google_artifact_registry_repository_iam_member" "build_push" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "build_deploy" {
+  count    = var.ingestion_image == null ? 0 : 1
   name     = google_cloud_run_v2_service.ingestion[0].name
   location = var.region
   role     = "roles/run.developer"
@@ -37,6 +38,7 @@ resource "google_service_account_iam_member" "build_act_as" {
   member             = "serviceAccount:${google_service_account.build.email}"
 }
 
+# Bootstrap this connection with gcloud and import it (see CLOUD_BUILD.md).
 # GitHub authorization is completed using the connection's installation URL.
 # OAuth credentials remain in Secret Manager, not in this repository.
 resource "google_cloudbuildv2_connection" "github" {
@@ -95,4 +97,9 @@ resource "google_project_iam_member" "connection_secrets" {
   role       = google_project_iam_custom_role.connection_secrets.name
   member     = "serviceAccount:service-${google_project.main.number}@gcp-sa-cloudbuild.iam.gserviceaccount.com"
   depends_on = [google_project_service.cloudbuild]
+}
+
+moved {
+  from = google_cloud_run_v2_service_iam_member.build_deploy
+  to   = google_cloud_run_v2_service_iam_member.build_deploy[0]
 }
