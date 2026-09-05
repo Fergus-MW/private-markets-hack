@@ -15,6 +15,17 @@ jobs:
           python-version: "3.11"
       - run: PYTHONPATH=services/ingestion python -m unittest discover -s services/ingestion/tests -v
 
+  connector-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      # Unlike the ingestion tests, these patch requests and google.oauth2.
+      - run: pip install -r services/connectors/requirements.txt
+      - run: PYTHONPATH=services/connectors python -m unittest discover -s services/connectors/tests -v
+
   terraform:
     runs-on: ubuntu-latest
     steps:

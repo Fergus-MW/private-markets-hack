@@ -12,6 +12,8 @@ There is no person/company extraction, entity resolution, or spaCy model. The se
 
 ## Input formats
 
+Gmail and Google Drive sources can also be pulled by dedicated Cloud Run Jobs. They archive original files and Google-native document exports in private GCS buckets, then pass supported documents, spreadsheets, presentations, emails and images to this service. Google Docs, Sheets and Slides export to DOCX, XLSX and PPTX. See [connector provisioning and account setup](infrastructure/CONNECTORS.md) for full-mailbox imports, Drive files, schedules, and retry behavior.
+
 - Reports and contracts: PDF, DOC, DOCX, ODT, RTF.
 - Presentations: PPT, PPTX.
 - Financial data: XLS, XLSX, CSV, TSV.

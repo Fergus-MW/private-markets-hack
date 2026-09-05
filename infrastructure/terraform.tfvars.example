@@ -6,3 +6,11 @@ zone = "europe-west2-a"
 invoker_members = ["user:REPLACE@example.com"]
 # Set after building and pushing the service image:
 # ingestion_image = "europe-west2-docker.pkg.dev/PROJECT/services/ingestion@sha256:..."
+
+# See CONNECTORS.md. Bootstrap with connector_image unset, then authorize accounts.
+# google_connectors = {
+#   team-mail = { provider = "gmail" } # Empty query reads the full mailbox.
+#   team-drive = { provider = "drive" } # All accessible non-trashed files, including Google Docs/Sheets.
+# }
+# connector_image = "europe-west2-docker.pkg.dev/PROJECT/services/connectors@sha256:..."
+# Add schedule = "0 */6 * * *" to an entry to poll every six hours (UTC).
