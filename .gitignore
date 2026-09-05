@@ -8,3 +8,5 @@ infrastructure/.terraform/
 *.tfplan
 *.tfvars
 !*.tfvars.example
+.DS_Store
+*.code-workspace

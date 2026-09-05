@@ -1,6 +1,6 @@
 # Private markets document context
 
-The [ingestion service](services/ingestion/) turns professional-services documents into source-grounded context for agents using **Unstructured**. It runs on the existing authenticated Cloud Run service and stores parsed documents in the existing private SurrealDB instance. Terraform lives in [`infrastructure/`](infrastructure/).
+The [ingestion service](services/ingestion/) builds a source-grounded knowledge graph from Gmail and Google Drive and prepares cited document context using **Unstructured**. It uses the existing authenticated Cloud Run service and private SurrealDB instance. Terraform lives in [`infrastructure/`](infrastructure/).
 
 ```
 Upload → Unstructured partitioning / OCR → section-aware chunks → SurrealDB
@@ -8,7 +8,7 @@ Upload → Unstructured partitioning / OCR → section-aware chunks → SurrealD
                                             agent context + source citations
 ```
 
-There is no person/company extraction, entity resolution, or spaCy model. The service prepares source material; it does not summarize, generate embeddings, or answer questions.
+The graph has fixed schemas for people, companies, funds, and quarterly administration projects; versioned email/file evidence; conservative identity resolution; and dated investor terms. See [connector setup, graph API, and fixture verification](services/ingestion/GRAPH.md). The existing upload/context API below remains available independently. There is no embedding or question-answering service.
 
 ## Input formats
 
@@ -21,7 +21,7 @@ Gmail and Google Drive sources can also be pulled by dedicated Cloud Run Jobs. T
 - Web/text: HTML, TXT, Markdown, RST, XML, EPUB.
 - Scans: PNG, JPEG, TIFF, BMP, HEIC, and image-only PDFs with English OCR.
 
-`GET /formats` returns the exact extension allowlist. Legacy Office formats use LibreOffice; document conversions use Pandoc. An extension being supported does not guarantee every encrypted, corrupt, or unusual variant can be parsed. Audio, video, generic ZIP archives, and recursive email attachment ingestion are not supported. Upload attachments as separate documents.
+`GET /formats` returns the exact extension allowlist. Legacy Office formats use LibreOffice; document conversions use Pandoc. An extension being supported does not guarantee every encrypted, corrupt, or unusual variant can be parsed. The upload endpoint does not process audio, video, generic ZIP archives, or email attachments. Upload attachments separately here; the Gmail connector ingests MIME attachments automatically.
 
 Uploads are limited to 20 MiB, expanded Office/EPUB containers to 100 MiB, and extracted text to one million characters. Requests are synchronous, with the existing 15-minute cloud timeout. Retry the same document after a timeout or 503.
 

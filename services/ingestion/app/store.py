@@ -40,3 +40,54 @@ class Store:
     def get(self, key):
         rows = self.query("SELECT * FROM type::thing('document', $key);", {"key": key})[0]["result"]
         return rows[0] if rows else None
+
+
+class GraphStore(Store):
+    """Single-workspace graph with optimistic concurrency and real SurrealDB edges.
+
+    The snapshot is the validated write model; kg_node/kg_link are its atomic
+    graph projection. A stale revision never overwrites another ingestion run.
+    """
+    def load_graph(self):
+        from app.graph import Graph, GraphState
+        rows = self.query("SELECT * FROM type::thing('kg_state', 'workspace');")[0]["result"]
+        if not rows:
+            return Graph()
+        row = rows[0]
+        row.pop("id", None)
+        # Legacy snapshots remain readable; the next atomic save removes this field.
+        row.pop("facts", None)
+        return Graph(GraphState.model_validate(row))
+
+    def save_graph(self, graph):
+        state = graph.state.model_dump(mode="json")
+        expected = state["revision"]
+        state["revision"] += 1
+        nodes = list(state["entities"].values()) + list(state["sources"].values())
+        edges = []
+        for edge in state["edges"].values():
+            edge = dict(edge)
+            for field in ("subject", "object"):
+                if edge[field] in graph.state.entities:
+                    edge[field] = graph.resolve(edge[field])
+            edges.append(edge)
+        self.query("""
+BEGIN TRANSACTION;
+LET $current = SELECT * FROM ONLY type::thing('kg_state', 'workspace');
+IF ($current != NONE AND $current.revision != $expected) OR ($current = NONE AND $expected != 0) {
+    THROW 'Graph changed concurrently; retry with a fresh snapshot';
+};
+UPSERT type::thing('kg_state', 'workspace') CONTENT $state;
+FOR $node IN $nodes {
+    UPSERT type::thing('kg_node', $node.key) CONTENT $node;
+};
+FOR $edge IN $edges {
+    LET $from = type::thing('kg_node', $edge.subject);
+    LET $to = type::thing('kg_node', $edge.object);
+    LET $relation = type::thing('kg_link', $edge.key);
+    DELETE $relation;
+    RELATE $from->$relation->$to CONTENT $edge;
+};
+COMMIT TRANSACTION;
+""", {"expected": expected, "state": state, "nodes": nodes, "edges": edges})
+        graph.state.revision = state["revision"]

@@ -5,7 +5,6 @@ on:
   pull_request:
 
 jobs:
-  # Context pagination and citation tests use only the standard library.
   tests:
     runs-on: ubuntu-latest
     steps:
@@ -13,6 +12,9 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
+      # Graph tests need these; the pins come from requirements.txt so they
+      # cannot drift. Installing it whole would pull torch and unstructured.
+      - run: pip install $(grep -E '^(fastapi|pydantic|openpyxl|httpx|python-multipart)==' services/ingestion/requirements.txt)
       - run: PYTHONPATH=services/ingestion python -m unittest discover -s services/ingestion/tests -v
 
   connector-tests:
