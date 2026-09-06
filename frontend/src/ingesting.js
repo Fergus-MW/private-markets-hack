@@ -44,14 +44,14 @@ export function traceLines(previous, report) {
 export async function mountIngesting(shell, { poll = 3000, fetcher = fetch, navigate = path => { location.href = path; } } = {}) {
   const nav = shell.querySelector('nav')?.outerHTML || '';
   shell.innerHTML = `${nav}<main><section class="ingesting" aria-labelledby="ingest-headline">
-    <p class="eyebrow">CONNECTING YOUR WORKSPACE</p>
-    <h1 id="ingest-headline">Building your knowledge graph.</h1>
+    <p class="eyebrow">READING YOUR DOCUMENTS</p>
+    <h1 id="ingest-headline">Building your terms register.</h1>
     <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
     <div class="progress-meta"><span id="progress-percent">0%</span><span id="progress-state">Starting…</span></div>
-    <p class="ingest-summary" id="ingest-summary" role="status" aria-live="polite">Starting your Drive and Gmail ingestion…</p>
+    <p class="ingest-summary" id="ingest-summary" role="status" aria-live="polite">Reading your Drive and Gmail…</p>
     <ul class="provider-list" id="provider-list"></ul>
     <p class="eyebrow trace-heading">AGENT ACTIVITY</p>
-    <ol class="trace-log" id="trace-log" aria-live="polite"><li class="trace-line">Ingestion requested for Drive and Gmail.</li></ol>
+    <ol class="trace-log" id="trace-log" aria-live="polite"><li class="trace-line">Requested a read of Drive and Gmail.</li></ol>
     <div id="ingest-action"></div>
   </section></main>`;
 
@@ -97,14 +97,14 @@ export async function mountIngesting(shell, { poll = 3000, fetcher = fetch, navi
   const finish = report => {
     stopped = true;
     if (report.state === READY) {
-      trace('Knowledge graph ready.');
-      action.innerHTML = '<a class="google-button" id="view-graph" href="/graphs">View your knowledge graph</a>';
+      trace('Terms register ready.');
+      action.innerHTML = '<a class="google-button" id="view-graph" href="/graphs">View your terms register</a>';
       timer = setTimeout(() => navigate('/graphs'), 1500);
       return;
     }
     // Not ready: say so plainly and offer the graph only as a partial view.
     trace(`Finished without a ready graph (${report.state}).`);
-    action.innerHTML = '<a class="retry-link" href="/graphs">See what was ingested so far</a>';
+    action.innerHTML = '<a class="retry-link" href="/graphs">See what was read so far</a>';
   };
 
   const tick = async () => {
