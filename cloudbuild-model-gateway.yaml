@@ -1,0 +1,17 @@
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/model-gateway:$BUILD_ID', 'services/model_gateway']
+  - id: tests
+    name: gcr.io/cloud-builders/docker
+    args: ['run', '--rm', '--entrypoint=python', '-v', '/workspace/services/model_gateway/tests:/tests:ro', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/model-gateway:$BUILD_ID', '-m', 'unittest', 'discover', '-s', '/tests', '-v']
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/model-gateway:$BUILD_ID']
+substitutions:
+  _REGION: europe-west2
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: 900s
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/model-gateway:$BUILD_ID'

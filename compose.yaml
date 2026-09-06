@@ -8,6 +8,26 @@ services:
       SURREAL_PASS: local-development-only
     ports: ["127.0.0.1:18000:8000"]
     volumes: ["surreal-data:/data"]
+  # The cloud VM bootstraps these principals in startup.sh.tftpl; locally the
+  # database starts empty, so the per-user graph path 500s without them.
+  surreal-init:
+    image: curlimages/curl:8.11.1
+    depends_on: [surrealdb]
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        until curl -fsS http://surrealdb:8000/health >/dev/null; do sleep 1; done
+        curl -fsS -u root:local-development-only -H 'Accept: application/json' -H 'Surreal-NS: projects' \
+          --data-raw "DEFINE NAMESPACE IF NOT EXISTS projects; USE NS projects; DEFINE USER OVERWRITE workflow_provisioner ON NAMESPACE PASSWORD 'localProjectProvisionerOnly' ROLES OWNER;" \
+          http://surrealdb:8000/sql
+        echo "surrealdb bootstrapped"
+  model-gateway:
+    build: ./services/model_gateway
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-pro-preview}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
   ingestion:
     build: ./services/ingestion
     ports: ["127.0.0.1:18080:8080"]
@@ -26,7 +46,12 @@ services:
       SURREAL_PROJECT_SECRET: localProjectCredentialKeyOnly
       GRAPH_IDENTITY_SECRET: ${GRAPH_IDENTITY_SECRET:-localGraphIdentitySigningKeyForDevOnly}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-pro-preview}
-    depends_on: [surrealdb]
+      MODEL_GATEWAY_URL: http://model-gateway:8080
+    depends_on:
+      surreal-init:
+        condition: service_completed_successfully
+      model-gateway:
+        condition: service_started
   frontend:
     build: ./frontend
     ports: ["127.0.0.1:18081:8080"]

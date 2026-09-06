@@ -53,6 +53,18 @@ class ClientTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 GraphClient.visualization("../other")
 
+    def test_production_model_calls_use_the_gateway(self):
+        projects = [{"key": self.PROJECT, "name": "Fund A"}]
+        response = self.response("get_project_graph_link", {"project_id": self.PROJECT})
+        with patch.dict(os.environ, {"MODEL_GATEWAY_URL": "https://gateway.example",
+                                    "GEMINI_API_KEY": "must-not-be-used"}), \
+                patch("mail_agent.clients.fetch_id_token", return_value="identity"), \
+                patch("mail_agent.clients.httpx.post", return_value=response) as post:
+            route("show graph", projects)
+        self.assertEqual(post.call_args.args[0], "https://gateway.example/v1/generate")
+        self.assertEqual(post.call_args.kwargs["json"]["cache_namespace"], "mail-router-v1")
+        self.assertIn("systemInstruction", post.call_args.kwargs["json"]["request"])
+
 
 if __name__ == "__main__":
     unittest.main()

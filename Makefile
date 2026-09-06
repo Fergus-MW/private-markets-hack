@@ -13,11 +13,13 @@ TEST_PINS := '^(fastapi|pydantic|openpyxl|httpx|python-multipart|pandas|numpy|go
 help: ## Show these targets
 	@grep -hE '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sort | awk -F':.*##' '{printf "  \033[36m%-18s\033[0m%s\n", $$1, $$2}'
 
-.env: ## Create a local .env with a fresh session key (never overwrites)
-	@printf 'SESSION_KEY=%s\n' "$$($(or $(PYTHON),python3) -c 'import secrets; print(secrets.token_hex(32))')" > .env
-	@echo "Wrote .env with a new SESSION_KEY. Add GOOGLE_OAUTH_* to enable sign-in."
-
-env: .env ## Ensure .env exists
+env: ## Ensure .env has a SESSION_KEY, appending one without touching other values
+	@touch .env
+	@# A file with no trailing newline would glue the key onto the last value.
+	@[ ! -s .env ] || [ "$$(tail -c1 .env | wc -l)" -eq 1 ] || printf '\n' >> .env
+	@grep -q '^SESSION_KEY=.' .env || { \
+		printf 'SESSION_KEY=%s\n' "$$($(or $(PYTHON),python3) -c 'import secrets; print(secrets.token_hex(32))')" >> .env; \
+		echo "Appended a new SESSION_KEY to .env. Add GOOGLE_OAUTH_* to enable sign-in."; }
 
 up: env ## Build and start the local stack (frontend 18081, ingestion 18080, db 18000)
 	$(COMPOSE) up --build -d

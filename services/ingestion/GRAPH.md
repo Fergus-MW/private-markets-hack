@@ -31,7 +31,7 @@ Edges include `sent`, `received`, `attached_to`, `mentions`, `works_for`, `manag
 4. Other supported files, including PDF side-letter attachments: reuse the existing Unstructured/OCR and context pipeline. Unsupported or invalid attachments fail the page explicitly.
 5. With `use_gemini=true`, remaining text (up to 60,000 characters per source) goes to `gemini-3.1-pro-preview`. `GEMINI_MODEL` can override it with another Gemini Flash or Pro model. JSON output is schema validated; names, identifiers and relationship/project endpoints must be supported by exact source quotes. Accepted model output retains model version and quotes on its source. Names alone cannot merge across sources. Larger sources return a warning and remain available for narrower extraction; they are never silently truncated.
 
-The agent has no tools or write privileges. It does not compute financial terms, invent identifiers, or declare project completion. Deterministic structured ingestion never calls Gemini. `use_gemini` defaults to false so fixture runs need no model credentials; enable it explicitly for live free-text entity extraction.
+The agent has no tools or write privileges. It does not compute financial terms, invent identifiers, or declare project completion. In production, calls pass through the private model gateway, which preserves stable prefixes for Vertex implicit caching and applies adaptive rate-limit backoff. Deterministic structured ingestion never calls Gemini. `use_gemini` defaults to false so fixture runs need no model credentials; enable it explicitly for live free-text entity extraction.
 
 Supported structured mappings:
 

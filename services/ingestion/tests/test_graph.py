@@ -116,6 +116,23 @@ class GraphTests(unittest.TestCase):
             ingestion.ingest(item)
             ingestion.ingest(item)
             self.assertEqual(model.call_count, 1)
+
+    def test_gemini_extraction_uses_gateway_when_configured(self):
+        payload = {"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text":
+            '{"entities":[],"relationships":[],"projects":[]}' }]}}], "modelVersion": "gateway-model"}
+        response = httpx.Response(200, request=httpx.Request("POST", "https://gateway.example/v1/generate"), json=payload)
+        client = unittest.mock.MagicMock()
+        client.__enter__.return_value.post.return_value = response
+        with patch.dict(os.environ, {"MODEL_GATEWAY_URL": "https://gateway.example",
+                                    "GEMINI_API_KEY": "must-not-be-used"}), \
+                patch("app.extraction.fetch_id_token", return_value="identity"), \
+                patch("app.extraction.httpx.Client", return_value=client):
+            result, version = gemini_extract("Actual source")
+        call = client.__enter__.return_value.post.call_args
+        self.assertEqual(call.args[0], "https://gateway.example/v1/generate")
+        self.assertEqual(call.kwargs["json"]["cache_namespace"], "graph-extraction-v1")
+        self.assertEqual(version, "gateway-model")
+        self.assertEqual(result.entities, [])
             ingestion.ingest(Item("drive", "account", "csv", "mapping.csv",
                 b"kind,name,id_namespace,external_id\nfund,Fund,registry,12\n"))
             self.assertEqual(model.call_count, 1)

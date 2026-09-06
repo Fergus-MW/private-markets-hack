@@ -8,14 +8,16 @@ Tested release images:
 
 | Service | Digest |
 | --- | --- |
-| Mail | `sha256:0fb7c4d47605deb422bfa700bf6c2ec8b52e3a50c567b70388b7079f615ef813` |
-| Workflow ingestion | `sha256:d481ea3e153d23429b1dcb326d9586256a8665b77f16cf13d8f61e951829e60b` |
+| Mail | `sha256:c7da67d7830af58efab6595a76e6e981576a8692d2440ff4543df4c36ac3856f` |
+| Workflow ingestion | `sha256:6b172534522f6aae533d2a5314606fd3b674df0436c0a557976cbd329f07e004` |
 | Frontend | `sha256:e4f8ee11b540b955399a08f670332a9649a116e2a951dc9e5252fe2c663ae2d0` |
 | Connector compatibility | `sha256:b2e1486bd48198a9233def767d02200a8164e6d62e045666de39076cf006f353` |
 
 All images are under `europe-west2-docker.pkg.dev/private-markets-hack/services/` (`agent-mail`, `ingestion`, `frontend`, `connectors`). The workflow and frontend releases were built from a stable snapshot of the original repository plus the mail integration, because independent frontend work was changing during the initial source upload. That concurrent UI work remains in the shared workspace and is not part of these release images.
 
-Validation: 29 mail tests; 28 connector tests; 25 frontend tests and production build; 41 ingestion tests with six environment-dependent integration cases skipped. The final images passed their Cloud Build tests. Live synthetic Vertex requests verified the actual workflow, ingestion, project-question and graph-link function calls and rule generation with validated source quotations. Worker JSON is validated locally because the heterogeneous worksheet schema was rejected by Vertex constrained decoding.
+All model-backed roles use `gemini-3.1-pro-preview`: mail routing and tool selection, QC planning and review, first-run production and review, workflow-result explanations, project Q&A, and unstructured graph extraction. Ingestion state checks and retries, deterministic QC checks, graph-link generation, and connector execution do not call a model.
+
+Validation: 37 mail tests; 28 connector tests; 25 frontend tests and production build; 47 ingestion tests with six environment-dependent integration cases skipped. The final images passed their Cloud Build tests. Live synthetic Vertex requests verified the Pro model with the actual mail-router and project-question workloads, including validated source quotations. Worker JSON is validated locally because the heterogeneous worksheet schema was rejected by Vertex constrained decoding.
 
 Live rollout completed. The private worker returned 200 after accessing its Firestore database; unauthenticated mail-service signup returned 403. A signed, unregistered-sender event passed through the public frontend and returned 202 without sending mail. An invalid signature returned 401, and unauthenticated frontend graph access returned 401. `/api/session` reports signup configured. A no-op Cloud Task completed with `status: OK`; its first attempt encountered IAM propagation delay and the queue retried successfully. External `/healthz` requests returned a Google 404 page; workflow availability was instead verified with `/formats` (200) and Cloud Run revision readiness.
 

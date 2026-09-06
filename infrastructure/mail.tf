@@ -125,10 +125,9 @@ resource "google_secret_manager_secret_iam_member" "mail_identity" {
   member    = "serviceAccount:${google_service_account.mail[0].email}"
 }
 resource "google_project_iam_member" "mail_models" {
-  for_each = var.mail_enabled ? {
-    mail     = google_service_account.mail[0].email
-    workflow = google_service_account.ingestion.email
-  } : {}
+  for_each = var.model_gateway_image == null ? {} : {
+    gateway = google_service_account.model_gateway[0].email
+  }
   project    = google_project.main.project_id
   role       = "roles/aiplatform.user"
   member     = "serviceAccount:${each.value}"
@@ -179,6 +178,7 @@ resource "google_cloud_run_v2_service" "mail" {
           INGESTION_URL           = google_cloud_run_v2_service.ingestion[0].uri
           FRONTEND_PUBLIC_ORIGIN  = var.frontend_public_origin
           GEMINI_MODEL            = var.mail_gemini_model
+          MODEL_GATEWAY_URL       = google_cloud_run_v2_service.model_gateway[0].uri
           GOOGLE_CLOUD_PROJECT    = google_project.main.project_id
         }
         content {
@@ -206,7 +206,8 @@ resource "google_cloud_run_v2_service" "mail" {
   }
   depends_on = [google_project_iam_member.mail_models, google_secret_manager_secret_iam_member.mail, google_secret_manager_secret_iam_member.mail_identity,
     google_project_iam_member.mail_database, google_cloud_tasks_queue_iam_member.mail_enqueue,
-  google_service_account_iam_member.mail_act_as_task, google_cloud_run_v2_service_iam_member.mail_graph]
+    google_service_account_iam_member.mail_act_as_task, google_cloud_run_v2_service_iam_member.mail_graph,
+  google_cloud_run_v2_service_iam_member.model_gateway_invoker]
 }
 resource "google_cloud_run_v2_service_iam_member" "mail_invoker" {
   for_each = var.mail_enabled && var.mail_image != null ? {
