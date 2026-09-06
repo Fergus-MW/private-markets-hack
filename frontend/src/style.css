@@ -31,7 +31,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--peach); outline
 button { font: inherit; cursor: pointer; }
 .site-nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .wordmark { font-size: 23px; font-weight: 700; text-decoration: none; color: #f5f1ec; letter-spacing: -1px; }
-.wordmark span { font-size: 12px; font-weight: 450; letter-spacing: 0; color: #a69aa7; margin-left: 8px; }
 .nav-link { color: #d9d0dc; text-decoration: none; font-size: 13px; }
 .nav-link span { margin-left: 10px; color: var(--peach); }
 .graph-selection { width: min(760px, 100%); }
@@ -73,7 +72,6 @@ button { font: inherit; cursor: pointer; }
 .node-detail > p:last-child { color: #b7aabd; font-size: 13px; }
 .detail-close { position: absolute; top: 7px; right: 7px; }
 @media (max-width: 600px) {
-  .wordmark span { display: none; }
   .graph-option { gap: 15px; padding: 19px; }
   .graph-icon { flex-basis: 40px; height: 40px; }
   .viewer-header { inset: 14px 14px auto; gap: 8px; }

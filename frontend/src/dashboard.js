@@ -22,7 +22,7 @@ export async function mountDashboard() {
     const projectId = location.pathname.replace(/\/$/, '').split('/')[2];
     document.body.classList.add('gate-view');
     document.body.dataset.theme = projectId ? '' : 'dark';
-    document.title = projectId ? 'QC gate · 60x' : 'QC gate · your projects · 60x';
+    document.title = projectId ? 'QC gate' : 'QC gate · your projects';
     shell.innerHTML = '<main><div class="wrap"><div class="notice" role="status">Loading…</div></div></main>';
     const message = shell.querySelector('[role=status]');
     try {

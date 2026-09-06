@@ -37,7 +37,7 @@ export async function mountGraphs() {
     const { signal } = controller;
     const part = location.pathname.replace(/\/$/, '').split('/')[2];
     const viewer = Boolean(part);
-    document.title = viewer ? 'Graph explorer · 60x' : 'Your knowledge graphs · 60x';
+    document.title = viewer ? 'Graph explorer' : 'Your knowledge graphs';
     document.body.classList.toggle('graph-view', viewer);
     backdrop.hidden = viewer; shade.hidden = viewer;
     shell.innerHTML = viewer
@@ -60,7 +60,7 @@ export async function mountGraphs() {
         const data = await request(`/api/graph/views/${encodeURIComponent(decodeURIComponent(part))}`, signal);
         if (signal.aborted) return;
         shell.querySelector('#view-name').textContent = data.name;
-        document.title = `${data.name} · 60x`;
+        document.title = data.name;
         if (!data.nodes.length) {
           message.innerHTML = '<h2>Your graph is taking shape.</h2><p>Connections will appear here as your sources are processed.</p>';
           return;

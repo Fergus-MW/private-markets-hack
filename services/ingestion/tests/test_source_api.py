@@ -17,6 +17,20 @@ class SourceApiTests(unittest.TestCase):
         self.assertEqual(store.graph.state.sources[source].account,'client-a')
         save.assert_called_once()
 
+    def test_invalid_optional_model_proposal_retains_source_instead_of_422(self):
+        store = CanonicalFixture()
+        envelope = json.dumps({'provider':'gmail','account':'client-a','external_id':'email-2','use_gemini':True})
+        with patch('app.source_api.load', return_value=(store, store.graph)), \
+                patch('app.source_api.save') as save, \
+                patch('app.extraction.gemini_extract', side_effect=ValueError('invalid proposal')):
+            response = TestClient(app).post('/sources', data={'envelope': envelope},
+                files={'file':('message.txt',b'Useful source text','text/plain')})
+        self.assertEqual(response.status_code,200,response.text)
+        source = store.graph.state.sources[response.json()['source_id']]
+        self.assertEqual(source.text,'Useful source text')
+        self.assertTrue(any('source retained for retry' in warning for warning in source.warnings))
+        save.assert_called_once()
+
     def test_large_workbook_retains_original_and_defers_extraction(self):
         from openpyxl import Workbook
         from app.connectors import Item
