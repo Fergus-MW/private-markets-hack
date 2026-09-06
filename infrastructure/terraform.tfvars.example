@@ -20,6 +20,9 @@ invoker_members = ["user:REPLACE@example.com"]
 # frontend_public_origin = "https://FRONTEND_SERVICE.run.app"
 # frontend_oauth_client_id = "YOUR_WEB_OAUTH_CLIENT_ID.apps.googleusercontent.com"
 # Populate frontend-oauth-client-secret and frontend-session-key through Secret Manager.
+# After authorizing/importing the GitHub connection (see CLOUD_BUILD.md), enable
+# main-branch releases for all configured applications and connector jobs:
+# enable_github_trigger = true
 # Existing resources managed outside this state must be imported before applying.
 # Terraform runs the project namespace migration through gcloud/IAP; it does not build images.
 

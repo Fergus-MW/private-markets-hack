@@ -23,6 +23,8 @@ Tiers (design rule 1)
   b  changes a report line, or must be resolved before upload
   c  hygiene
 
+Amount at stake is the tier a total only: tier b amounts are components of the same money.
+
 Writes deterministic JSON checks. The project workflow owns artifact retention and audit metadata.
 Exit code 1 when any check FAILs.
 """
@@ -106,12 +108,17 @@ order = {"TC00": 0, "TC01": 1, "TC02": 2, "TC03": 3, "TC04": 4, "TC05": 5, "TC06
 df = pd.DataFrame(R).sort_values("check", key=lambda s: s.map(order)).reset_index(drop=True)
 pd.set_option("display.width", 230); pd.set_option("display.max_colwidth", 120)
 summary = df["status"].value_counts().to_dict(); by_tier = df[df["status"].isin(["FAIL", "WARN"])].groupby("tier").size().to_dict()
-hdr = f"Mode: {MODE} | entity: {entity_name} | as-of: {a.as_of} | schedule: {Path(a.schedule).name}" + (f" | register: {Path(a.terms).name} ({len(T)} rows, {', '.join(sorted(T['version'].unique()))})" if T is not None else " | register: none")
+hdr = f"Mode: {MODE} | entity: {entity_name} | as-of: {a.as_of} | schedule: {Path(a.schedule).name}" + (f" | register: {Path(a.terms).name} ({len(T)} rows, {', '.join(sorted(T['version'].astype(str).unique())) if 'version' in T else 'no version label'})" if T is not None else " | register: none")
 print(hdr); print(df[["check", "tier", "status", "name", "investors", "amount"]].to_string(index=False))
 for _, r in df[df["status"].isin(["FAIL", "DECISION"])].iterrows(): print(f"\n  {r['check']} [{r['status']}, tier {r['tier']}] {r['detail']}")
-print("\nSUMMARY:", summary, "| findings by tier:", by_tier, "| amount at stake:", round(float(df.loc[df['status'] == 'FAIL', 'amount'].sum()), 2))
+# Tier b findings are components of the tier a lines, so only tier a is added up.
+at_stake = round(float(df.loc[(df["status"] == "FAIL") & (df["tier"] == "a"), "amount"].sum()), 2)
+print("\nSUMMARY:", summary, "| findings by tier:", by_tier, "| amount at stake (tier a):", at_stake)
 
 # Only deterministic checker output belongs here. The workflow owns audit time.
 Path(a.json).write_text(json.dumps({"summary": summary, "findings_by_tier": by_tier,
+                                  "amount_at_stake": at_stake, "mode": MODE, "as_of": a.as_of,
+                                  "entity": entity_name, "entity_id": entity_id,
+                                  "terms_rows_in_force": int(len(T)) if T is not None else 0,
                                   "checks": df.to_dict("records")}, sort_keys=True, default=str))
 sys.exit(1 if "FAIL" in summary else 0)

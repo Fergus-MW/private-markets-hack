@@ -168,18 +168,19 @@ resource "google_cloud_run_v2_service" "mail" {
       }
       dynamic "env" {
         for_each = {
-          INGESTION_CONNECTOR_JOB = "projects/${google_project.main.project_id}/locations/${var.region}/jobs/${var.mail_connector_job}"
-          INGESTION_STATUS_BUCKET = var.mail_ingestion_status_bucket
-          MAIL_DATABASE           = google_firestore_database.mail[0].name
-          MAIL_QUEUE              = google_cloud_tasks_queue.mail[0].id
-          MAIL_SERVICE_URL        = local.mail_url
-          MAIL_TASK_ACCOUNT       = google_service_account.mail_task[0].email
-          AGENTMAIL_INBOX_ID      = var.agentmail_inbox_id
-          INGESTION_URL           = google_cloud_run_v2_service.ingestion[0].uri
-          FRONTEND_PUBLIC_ORIGIN  = var.frontend_public_origin
-          GEMINI_MODEL            = var.mail_gemini_model
-          MODEL_GATEWAY_URL       = google_cloud_run_v2_service.model_gateway[0].uri
-          GOOGLE_CLOUD_PROJECT    = google_project.main.project_id
+          INGESTION_CONNECTOR_JOB       = "projects/${google_project.main.project_id}/locations/${var.region}/jobs/${var.mail_connector_job}"
+          INGESTION_STATUS_BUCKET       = var.mail_ingestion_status_bucket
+          MAIL_DATABASE                 = google_firestore_database.mail[0].name
+          MAIL_QUEUE                    = google_cloud_tasks_queue.mail[0].id
+          MAIL_SERVICE_URL              = local.mail_url
+          MAIL_TASK_ACCOUNT             = google_service_account.mail_task[0].email
+          AGENTMAIL_INBOX_ID            = var.agentmail_inbox_id
+          INGESTION_URL                 = google_cloud_run_v2_service.ingestion[0].uri
+          FRONTEND_PUBLIC_ORIGIN        = var.frontend_public_origin
+          GEMINI_MODEL                  = var.mail_gemini_model
+          MODEL_GATEWAY_URL             = google_cloud_run_v2_service.model_gateway[0].uri
+          GOOGLE_CLOUD_PROJECT          = google_project.main.project_id
+          INGESTION_POLL_WINDOW_SECONDS = tostring(var.mail_poll_window_seconds)
         }
         content {
           name  = env.key
@@ -236,6 +237,26 @@ output "mail_service_url" {
   value = try(google_cloud_run_v2_service.mail[0].uri, null)
 }
 
+resource "google_cloudbuild_trigger" "mail" {
+  count           = var.enable_github_trigger && var.mail_enabled && var.mail_image != null ? 1 : 0
+  name            = "mail-main"
+  location        = var.region
+  service_account = google_service_account.build.id
+  filename        = "cloudbuild-mail.yaml"
+  included_files  = ["services/mail_agent/**", "cloudbuild-mail.yaml"]
+  substitutions = {
+    _REGION = var.region
+    _DEPLOY = "true"
+  }
+  repository_event_config {
+    repository = google_cloudbuildv2_repository.main[0].id
+    push { branch = "^main$" }
+  }
+  depends_on = [google_cloud_run_v2_service_iam_member.mail_build,
+    google_service_account_iam_member.mail_build,
+  google_project_iam_member.build_logs, google_artifact_registry_repository_iam_member.build_push]
+}
+
 variable "mail_connector_job" {
   description = "Existing Cloud Run connector job used for account-scoped ingestion executions."
   type        = string
@@ -270,4 +291,43 @@ resource "google_storage_bucket_iam_member" "mail_ingestion_status" {
     title      = "Ingestion progress objects only"
     expression = "resource.name.startsWith('projects/_/buckets/${var.mail_ingestion_status_bucket}/objects/ingestion-status/')"
   }
+}
+
+# New mail in a user's own mailbox raises no event this system can receive, so
+# ingestion is polled. The endpoint is a no-op for accounts whose previous run
+# is still in flight, so the cadence only bounds how stale a graph can get.
+resource "google_service_account" "mail_scheduler" {
+  count        = var.mail_enabled && var.mail_image != null ? 1 : 0
+  project      = google_project.main.project_id
+  account_id   = "mail-scheduler"
+  display_name = "Scheduled ingestion polling for the mail agent"
+}
+
+resource "google_cloud_run_v2_service_iam_member" "mail_scheduler" {
+  count    = var.mail_enabled && var.mail_image != null ? 1 : 0
+  project  = google_project.main.project_id
+  location = var.region
+  name     = google_cloud_run_v2_service.mail[0].name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.mail_scheduler[0].email}"
+}
+
+resource "google_cloud_scheduler_job" "mail_poll" {
+  count       = var.mail_enabled && var.mail_image != null ? 1 : 0
+  project     = google_project.main.project_id
+  region      = var.region
+  name        = "mail-ingestion-poll"
+  description = "Start an ingestion run for each account so new mail is picked up"
+  schedule    = var.mail_poll_schedule
+  time_zone   = "Etc/UTC"
+  http_target {
+    uri         = "${local.mail_url}/ingestion/poll"
+    http_method = "POST"
+    headers     = { "Content-Type" = "application/json" }
+    oidc_token {
+      service_account_email = google_service_account.mail_scheduler[0].email
+      audience              = local.mail_url
+    }
+  }
+  depends_on = [google_cloud_run_v2_service_iam_member.mail_scheduler]
 }

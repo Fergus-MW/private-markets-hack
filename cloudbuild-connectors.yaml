@@ -19,15 +19,32 @@ steps:
     args:
       - -ceu
       - |
+        case "${_DEPLOY}" in
+          true) ;;
+          false) echo "Build-only run: deployment explicitly disabled."; exit 0 ;;
+          *) echo "_DEPLOY must be true or false" >&2; exit 1 ;;
+        esac
+        read -r -a JOBS <<< "${_JOBS}"
+        if [ "$${#JOBS[@]}" -eq 0 ]; then
+          echo "Connector releases require _JOBS; refusing to skip deployment." >&2
+          exit 1
+        fi
+        for JOB in "$${JOBS[@]}"; do
+          if [[ ! "$$JOB" =~ ^connector-[a-z0-9][a-z0-9-]*$ ]]; then
+            echo "Invalid connector job target" >&2
+            exit 1
+          fi
+        done
         IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/services/connectors"
         DIGEST=$$(gcloud artifacts docker images describe "$$IMAGE:$BUILD_ID" --format='value(image_summary.digest)')
         test -n "$$DIGEST"
-        for JOB in ${_JOBS}; do
+        for JOB in "$${JOBS[@]}"; do
           gcloud run jobs update "$$JOB" --project="$PROJECT_ID" --region="${_REGION}" --image="$$IMAGE@$$DIGEST" --quiet
         done
 substitutions:
   _REGION: europe-west2
   _JOBS: ''
+  _DEPLOY: 'true'
 options:
   logging: CLOUD_LOGGING_ONLY
 timeout: 900s

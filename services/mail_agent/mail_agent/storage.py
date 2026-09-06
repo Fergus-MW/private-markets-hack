@@ -53,7 +53,7 @@ class Repository:
                 return previous
             tx.create(job_ref, {"kind": "ingestion", "email": account["email"], "tenant": account["tenant"],
                                "message_id": account.get("message_id"), "thread_id": account.get("thread_id"),
-                               "subject": "Your knowledge graph — ingestion update", "created_at": time.time()})
+                               "subject": "Your knowledge graph: ingestion update", "created_at": time.time()})
             tx.update(ref, {"ingestion_job": identifier})
             return identifier
 

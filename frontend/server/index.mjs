@@ -24,7 +24,7 @@ createServer(async (req, res) => {
     if (req.method !== 'GET') { res.writeHead(405, { Allow: 'GET' }); res.end(); return; }
     if (await auth(req, res, url)) return;
     if (url.pathname === '/healthz') { res.end('ok'); return; }
-    const appRoute = url.pathname === '/' || /^\/graphs(?:\/[^/]+)?\/?$/.test(url.pathname);
+    const appRoute = url.pathname === '/' || /^\/(?:graphs|dashboard)(?:\/[^/]+)?\/?$/.test(url.pathname);
     const path = resolve(root, '.' + decodeURIComponent(appRoute ? '/index.html' : url.pathname));
     if (!path.startsWith(root.endsWith(sep) ? root : root + sep)) { res.writeHead(404); res.end(); return; }
     const file = await readFile(path);

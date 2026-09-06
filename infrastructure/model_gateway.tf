@@ -96,3 +96,23 @@ resource "google_cloud_run_v2_service_iam_member" "model_gateway_build" {
 output "model_gateway_url" {
   value = try(google_cloud_run_v2_service.model_gateway[0].uri, null)
 }
+
+resource "google_cloudbuild_trigger" "model_gateway" {
+  count           = var.enable_github_trigger && var.model_gateway_image != null ? 1 : 0
+  name            = "model-gateway-main"
+  location        = var.region
+  service_account = google_service_account.build.id
+  filename        = "cloudbuild-model-gateway.yaml"
+  included_files  = ["services/model_gateway/**", "cloudbuild-model-gateway.yaml"]
+  substitutions = {
+    _REGION = var.region
+    _DEPLOY = "true"
+  }
+  repository_event_config {
+    repository = google_cloudbuildv2_repository.main[0].id
+    push { branch = "^main$" }
+  }
+  depends_on = [google_cloud_run_v2_service_iam_member.model_gateway_build,
+    google_service_account_iam_member.model_gateway_build,
+  google_project_iam_member.build_logs, google_artifact_registry_repository_iam_member.build_push]
+}

@@ -1,4 +1,5 @@
 """Project graph and workflow orchestration endpoints under existing service IAM."""
+import json
 import logging
 import mimetypes
 from datetime import date
@@ -141,6 +142,59 @@ def runs(project_id: str, offset: int = Query(0, ge=0), limit: int = Query(100, 
     rows = local_store(project_id).list_records("run", offset, limit + 1)
     return {"runs": [{k: v for k, v in row.items() if k != "claim_token"} for row in rows[:limit]],
             "next_offset": offset + limit if len(rows) > limit else None}
+
+
+def normalized_check(check):
+    """One shape for both checkers: the terms gate names investors and amounts, the
+    loader gate names a group and an observed/expected pair."""
+    if "name" in check:
+        return {"id": check.get("check", ""), "tier": check.get("tier", "c"), "status": check["status"],
+                "name": check["name"], "who": check.get("investors", ""),
+                "amount": float(check.get("amount") or 0), "detail": check.get("detail", "")}
+    return {"id": check.get("id", ""), "tier": check.get("tier", "c"), "status": check["status"],
+            "name": check.get("check", ""), "who": check.get("group", ""), "amount": 0.0,
+            "detail": f"observed {check.get('observed')}; expected {check.get('expected')}"}
+
+
+def amount_at_stake(checks):
+    # Tier a only: tier b findings are components of the same money (gates/README.md).
+    return round(sum(item["amount"] for item in checks if item["status"] == "FAIL" and item["tier"] == "a"), 2)
+
+
+def gate_run(store, run):
+    output = run.get("output") or {}
+    results, checks = {}, []
+    identifier = (output.get("artifacts") or {}).get("check_results")
+    if identifier:
+        try:
+            results = json.loads(store.read_artifact(identifier)[1])
+            checks = [normalized_check(check) for check in results.get("checks", [])]
+        except (KeyError, ValueError):
+            results = {}
+    inputs = {}
+    for role, artifact_id in (run.get("inputs") or {}).items():
+        item = store.get_record("artifact", artifact_id) or {}
+        inputs[role] = {"artifact_id": artifact_id, "filename": item.get("filename", ""),
+                        "sha256": item.get("sha256", "")}
+    return {"run_id": run["key"], "turn": run.get("turn"), "status": run["status"],
+            "gate": run["gate"], "mode": run["mode"], "as_of": run.get("as_of") or results.get("as_of", ""),
+            "started_at": run.get("started_at", ""), "finished_at": run.get("finished_at", ""),
+            "entity": results.get("entity", ""), "terms_rows_in_force": results.get("terms_rows_in_force"),
+            "summary": results.get("summary", {}), "findings_by_tier": results.get("findings_by_tier", {}),
+            "amount_at_stake": results.get("amount_at_stake", amount_at_stake(checks)),
+            "release_ready": output.get("release_ready", False), "reason": output.get("reason", ""),
+            "checks": checks, "inputs": inputs, "runtime": run.get("runtime", {}),
+            "artifacts": output.get("artifacts", {})}
+
+
+@router.get("/{project_id}/dashboard")
+def dashboard(project_id: str, limit: int = Query(20, ge=1, le=100)):
+    """Every deterministic gate run of this project, as the QC dashboard renders it.
+    Agent-team runs are excluded: they have no checks, only a written summary."""
+    store = local_store(project_id)
+    runs = [row for row in store.list_records("run", 0, 200) if row.get("gate")]
+    runs.sort(key=lambda row: row.get("started_at", ""), reverse=True)
+    return {"project": store.manifest()["project"], "runs": [gate_run(store, row) for row in runs[:limit]]}
 
 
 @router.post("/{project_id}/automate")

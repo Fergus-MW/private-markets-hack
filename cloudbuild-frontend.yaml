@@ -21,15 +21,17 @@ steps:
     args:
       - -ceu
       - |
+        if [ "${_SERVICES}" != "frontend" ]; then
+          echo "Frontend releases require _SERVICES=frontend; refusing an empty or unexpected deployment target." >&2
+          exit 1
+        fi
         IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/services/frontend"
         DIGEST=$$(gcloud artifacts docker images describe "$$IMAGE:$BUILD_ID" --format='value(image_summary.digest)')
         test -n "$$DIGEST"
-        for SERVICE in ${_SERVICES}; do
-          gcloud run services update "$$SERVICE" --project="$PROJECT_ID" --region="${_REGION}" --image="$$IMAGE@$$DIGEST" --quiet
-        done
+        gcloud run services update frontend --project="$PROJECT_ID" --region="${_REGION}" --image="$$IMAGE@$$DIGEST" --quiet
 substitutions:
   _REGION: europe-west2
-  _SERVICES: ''
+  _SERVICES: 'frontend'
 options:
   logging: CLOUD_LOGGING_ONLY
 timeout: 900s

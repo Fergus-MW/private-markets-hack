@@ -4,6 +4,9 @@ import { createGraph } from './graph.js';
 if (/^\/graphs(?:\/|$)/.test(location.pathname)) {
   const { mountGraphs } = await import('./graphs.js');
   await mountGraphs();
+} else if (/^\/dashboard(?:\/|$)/.test(location.pathname)) {
+  const { mountDashboard } = await import('./dashboard.js');
+  await mountDashboard();
 } else {
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');

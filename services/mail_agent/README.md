@@ -67,3 +67,23 @@ cd frontend && npm test && npm run build
 The first-run producer is bounded to 120,000 source characters, 150 sources, 10 sheets and 2,000 rows per sheet. It does not claim complete coverage when evidence exceeds those bounds. Citations must match project-local source text. Numeric output still requires human review and a separate deterministic QC run. Inbound attachments are not imported by this mail service; the existing connected-source ingestion path supplies project evidence.
 
 Provider references: [AgentMail webhook verification](https://docs.agentmail.to/webhook-verification), [AgentMail receiving messages](https://docs.agentmail.to/messages), [Cloud Tasks authenticated HTTP tasks](https://docs.cloud.google.com/tasks/docs/creating-http-target-tasks), [Vertex structured output](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/capabilities/control-generated-output).
+
+## Picking up new mail
+
+New mail in a user's own mailbox raises no event this system can receive, so
+ingestion is polled rather than pushed. A Cloud Scheduler job calls
+`POST /ingestion/poll` on a cadence (`mail_poll_schedule`, every 30 minutes by
+default) and requests a run for each account. Runs are deduplicated by a time
+window (`mail_poll_window_seconds`), which must stay at or below the poll
+interval or runs are skipped.
+
+Polling never overlaps or duplicates work: `reserve_ingestion` returns the
+existing run while one is in flight, and refuses to start a new one when the
+last result was unconfirmed, so an account whose launch could not be verified
+stays held rather than being run twice. The response reports `started`, `held`
+and `skipped` for exactly this reason.
+
+Ingestion is therefore triggered from three places: signup, this poll, and an
+explicit `retry_ingestion` from the user. Latency for new mail is bounded by the
+poll interval; a push trigger would need Gmail `users.watch` with Pub/Sub and a
+watch renewed every seven days per account.

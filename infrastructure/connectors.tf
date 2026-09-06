@@ -201,6 +201,7 @@ resource "google_cloudbuild_trigger" "connectors" {
   substitutions = {
     _REGION = var.region
     _JOBS   = join(" ", [for key in sort(keys(local.connector_jobs)) : "connector-${key}"])
+    _DEPLOY = "true"
   }
   repository_event_config {
     repository = google_cloudbuildv2_repository.main[0].id

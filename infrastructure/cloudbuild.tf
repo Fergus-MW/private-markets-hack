@@ -38,6 +38,23 @@ resource "google_service_account_iam_member" "build_act_as" {
   member             = "serviceAccount:${google_service_account.build.email}"
 }
 
+# Frontend releases can update only this service and use its runtime identity.
+resource "google_cloud_run_v2_service_iam_member" "build_deploy_frontend" {
+  count    = var.frontend_image == null ? 0 : 1
+  project  = google_project.main.project_id
+  name     = google_cloud_run_v2_service.frontend[0].name
+  location = var.region
+  role     = "roles/run.developer"
+  member   = "serviceAccount:${google_service_account.build.email}"
+}
+
+resource "google_service_account_iam_member" "build_act_as_frontend" {
+  count              = var.frontend_image == null ? 0 : 1
+  service_account_id = google_service_account.frontend[0].name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.build.email}"
+}
+
 # Bootstrap this connection with gcloud and import it (see CLOUD_BUILD.md).
 # GitHub authorization is completed using the connection's installation URL.
 # OAuth credentials remain in Secret Manager, not in this repository.
@@ -69,12 +86,16 @@ resource "google_cloudbuildv2_repository" "main" {
 }
 
 resource "google_cloudbuild_trigger" "ingestion" {
-  count           = var.enable_github_trigger ? 1 : 0
+  count           = var.enable_github_trigger && var.ingestion_image != null ? 1 : 0
   name            = "ingestion-main"
   location        = var.region
   service_account = google_service_account.build.id
   filename        = "cloudbuild.yaml"
   included_files  = ["services/ingestion/**", "cloudbuild.yaml"]
+  substitutions = {
+    _REGION = var.region
+    _DEPLOY = "true"
+  }
   repository_event_config {
     repository = google_cloudbuildv2_repository.main[0].id
     push {
@@ -85,6 +106,31 @@ resource "google_cloudbuild_trigger" "ingestion" {
     google_artifact_registry_repository_iam_member.build_push,
     google_cloud_run_v2_service_iam_member.build_deploy,
   google_service_account_iam_member.build_act_as]
+}
+
+resource "google_cloudbuild_trigger" "frontend" {
+  count           = var.enable_github_trigger && var.frontend_image != null ? 1 : 0
+  name            = "frontend-main"
+  location        = var.region
+  service_account = google_service_account.build.id
+  filename        = "cloudbuild-frontend.yaml"
+  included_files  = ["frontend/**", "cloudbuild-frontend.yaml"]
+  substitutions = {
+    _REGION   = var.region
+    _SERVICES = "frontend"
+  }
+  repository_event_config {
+    repository = google_cloudbuildv2_repository.main[0].id
+    push {
+      branch = "^main$"
+    }
+  }
+  depends_on = [
+    google_project_iam_member.build_logs,
+    google_artifact_registry_repository_iam_member.build_push,
+    google_cloud_run_v2_service_iam_member.build_deploy_frontend,
+    google_service_account_iam_member.build_act_as_frontend,
+  ]
 }
 
 # The Cloud Build service agent creates the OAuth secret and assigns its
