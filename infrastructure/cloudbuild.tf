@@ -25,8 +25,9 @@ resource "google_artifact_registry_repository_iam_member" "build_push" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "build_deploy" {
+  # Release IAM targets a provisioned service; it must not pull runtime drift into a CD apply.
   count    = var.ingestion_image == null ? 0 : 1
-  name     = google_cloud_run_v2_service.ingestion[0].name
+  name     = "document-ingestion"
   location = var.region
   role     = "roles/run.developer"
   member   = "serviceAccount:${google_service_account.build.email}"
@@ -40,16 +41,16 @@ resource "google_service_account_iam_member" "build_act_as" {
 
 # Frontend releases can update only this service and use its runtime identity.
 resource "google_cloud_run_v2_service_iam_member" "build_deploy_frontend" {
-  count    = var.frontend_image == null ? 0 : 1
+  count    = local.frontend_release_enabled ? 1 : 0
   project  = google_project.main.project_id
-  name     = google_cloud_run_v2_service.frontend[0].name
+  name     = "frontend"
   location = var.region
   role     = "roles/run.developer"
   member   = "serviceAccount:${google_service_account.build.email}"
 }
 
 resource "google_service_account_iam_member" "build_act_as_frontend" {
-  count              = var.frontend_image == null ? 0 : 1
+  count              = local.frontend_release_enabled ? 1 : 0
   service_account_id = google_service_account.frontend[0].name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.build.email}"
@@ -61,7 +62,7 @@ resource "google_service_account_iam_member" "build_act_as_frontend" {
 resource "google_cloudbuildv2_connection" "github" {
   # Only needed by the trigger; creating it requires the gcloud/GitHub App
   # bootstrap below, so keep it gated with everything else that uses it.
-  count    = var.enable_github_trigger ? 1 : 0
+  count    = var.enable_github_trigger && var.github_connection_mode == "regional" ? 1 : 0
   location = var.region
   name     = "github"
   github_config {}
@@ -72,13 +73,13 @@ resource "google_cloudbuildv2_connection" "github" {
 }
 
 variable "enable_github_trigger" {
-  description = "Enable after completing the Cloud Build GitHub App authorization."
+  description = "Enable release triggers after authorizing the selected GitHub connection mode."
   type        = bool
   default     = false
 }
 
 resource "google_cloudbuildv2_repository" "main" {
-  count             = var.enable_github_trigger ? 1 : 0
+  count             = var.enable_github_trigger && var.github_connection_mode == "regional" ? 1 : 0
   name              = "private-markets-hack"
   location          = var.region
   parent_connection = google_cloudbuildv2_connection.github[0].id
@@ -88,7 +89,7 @@ resource "google_cloudbuildv2_repository" "main" {
 resource "google_cloudbuild_trigger" "ingestion" {
   count           = var.enable_github_trigger && var.ingestion_image != null ? 1 : 0
   name            = "ingestion-main"
-  location        = var.region
+  location        = local.github_trigger_location
   service_account = google_service_account.build.id
   filename        = "cloudbuild.yaml"
   included_files  = ["services/ingestion/**", "cloudbuild.yaml"]
@@ -96,10 +97,19 @@ resource "google_cloudbuild_trigger" "ingestion" {
     _REGION = var.region
     _DEPLOY = "true"
   }
-  repository_event_config {
-    repository = google_cloudbuildv2_repository.main[0].id
-    push {
-      branch = "^main$"
+  dynamic "github" {
+    for_each = var.github_connection_mode == "github-app" ? [1] : []
+    content {
+      owner = "Fergus-MW"
+      name  = "private-markets-hack"
+      push { branch = "^main$" }
+    }
+  }
+  dynamic "repository_event_config" {
+    for_each = var.github_connection_mode == "regional" ? [1] : []
+    content {
+      repository = google_cloudbuildv2_repository.main[0].id
+      push { branch = "^main$" }
     }
   }
   depends_on = [google_project_iam_member.build_logs,
@@ -109,9 +119,9 @@ resource "google_cloudbuild_trigger" "ingestion" {
 }
 
 resource "google_cloudbuild_trigger" "frontend" {
-  count           = var.enable_github_trigger && var.frontend_image != null ? 1 : 0
+  count           = var.enable_github_trigger && local.frontend_release_enabled ? 1 : 0
   name            = "frontend-main"
-  location        = var.region
+  location        = local.github_trigger_location
   service_account = google_service_account.build.id
   filename        = "cloudbuild-frontend.yaml"
   included_files  = ["frontend/**", "cloudbuild-frontend.yaml"]
@@ -119,10 +129,19 @@ resource "google_cloudbuild_trigger" "frontend" {
     _REGION   = var.region
     _SERVICES = "frontend"
   }
-  repository_event_config {
-    repository = google_cloudbuildv2_repository.main[0].id
-    push {
-      branch = "^main$"
+  dynamic "github" {
+    for_each = var.github_connection_mode == "github-app" ? [1] : []
+    content {
+      owner = "Fergus-MW"
+      name  = "private-markets-hack"
+      push { branch = "^main$" }
+    }
+  }
+  dynamic "repository_event_config" {
+    for_each = var.github_connection_mode == "regional" ? [1] : []
+    content {
+      repository = google_cloudbuildv2_repository.main[0].id
+      push { branch = "^main$" }
     }
   }
   depends_on = [
@@ -151,4 +170,25 @@ resource "google_project_iam_member" "connection_secrets" {
 moved {
   from = google_cloud_run_v2_service_iam_member.build_deploy
   to   = google_cloud_run_v2_service_iam_member.build_deploy[0]
+}
+
+variable "github_connection_mode" {
+  description = "github-app reuses a connected GitHub App repository; regional uses a second-generation host connection."
+  type        = string
+  default     = "regional"
+  validation {
+    condition     = contains(["github-app", "regional"], var.github_connection_mode)
+    error_message = "github_connection_mode must be github-app or regional."
+  }
+}
+
+variable "frontend_existing_for_cd" {
+  description = "Manage releases for the existing frontend service without importing or changing its runtime configuration. Its runtime service account must already be managed."
+  type        = bool
+  default     = false
+}
+
+locals {
+  github_trigger_location  = var.github_connection_mode == "github-app" ? "global" : var.region
+  frontend_release_enabled = var.frontend_image != null || var.frontend_existing_for_cd
 }
