@@ -175,8 +175,9 @@ resource "google_compute_instance" "database" {
     enable-oslogin = "TRUE"
   }
   metadata_startup_script = templatefile("${path.module}/startup.sh.tftpl", {
-    project_id    = var.project_id
-    surreal_image = var.surreal_image
+    project_id            = var.project_id
+    surreal_image         = var.surreal_image
+    surreal_rpc_body_size = var.surreal_rpc_body_size
     }
   )
   # Startup-script updates otherwise force VM replacement. Existing databases
@@ -243,6 +244,12 @@ resource "google_cloud_run_v2_service" "ingestion" {
       env {
         name  = "SURREAL_URL"
         value = "http://${google_compute_instance.database.network_interface[0].network_ip}:8000"
+      }
+      # Same value the database enforces, so the size the service advertises to
+      # connectors can never drift above what a source write will actually accept.
+      env {
+        name  = "SURREAL_HTTP_MAX_RPC_BODY_SIZE"
+        value = tostring(var.surreal_rpc_body_size)
       }
       env {
         name  = "SURREAL_USER"

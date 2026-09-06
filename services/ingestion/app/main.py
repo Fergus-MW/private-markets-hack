@@ -43,7 +43,12 @@ def ready():
 
 @app.get("/formats")
 def formats():
-    return {"extensions": sorted(SUPPORTED), "source_extensions": sorted(SUPPORTED | {".json"}), "max_bytes": MAX_BYTES,
+    # Advertise what can actually be stored, not what the request body allows.
+    # Connectors skip anything larger as archive-only, so an oversized file no
+    # longer fails a whole scan on a database write it was never going to survive.
+    from app.store import MAX_BLOB_BYTES
+    return {"extensions": sorted(SUPPORTED), "source_extensions": sorted(SUPPORTED | {".json"}),
+            "max_bytes": min(MAX_BYTES, MAX_BLOB_BYTES),
             "pdf_strategies": ["auto", "ocr_only", "hi_res"], "ocr_languages": ["eng"]}
 
 
