@@ -199,7 +199,8 @@ resource "google_artifact_registry_repository" "services" {
 resource "google_cloud_run_v2_service" "ingestion" {
   # Cloud Build owns application image updates after initial provisioning.
   lifecycle {
-    ignore_changes = [template[0].containers[0].image]
+    # Cloud Build also writes CLI attribution; it is release metadata, not runtime configuration.
+    ignore_changes = [template[0].containers[0].image, client, client_version]
   }
   count               = var.ingestion_image == null ? 0 : 1
   name                = "document-ingestion"
