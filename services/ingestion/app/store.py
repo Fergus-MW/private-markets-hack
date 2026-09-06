@@ -8,8 +8,13 @@ SAVE = "UPSERT type::thing('document', $document.key) CONTENT $document;"
 # SurrealDB rejects an oversized RPC body with 413, so the real ceiling on a
 # stored source is its base64 form, not the raw file. Keep this in step with
 # SURREAL_HTTP_MAX_RPC_BODY_SIZE on the database VM; terraform sets both.
+def blob_limit(rpc_body_limit):
+    """Raw bytes that still fit once base64 encoded, leaving room for the envelope."""
+    return max(0, rpc_body_limit - 8192) * 3 // 4
+
+
 RPC_BODY_LIMIT = int(os.environ.get("SURREAL_HTTP_MAX_RPC_BODY_SIZE", 4 << 20))
-MAX_BLOB_BYTES = max(0, RPC_BODY_LIMIT - 8192) * 3 // 4
+MAX_BLOB_BYTES = blob_limit(RPC_BODY_LIMIT)
 
 
 class SourceTooLarge(ValueError):
@@ -73,9 +78,18 @@ class Store:
         if len(content) > MAX_BLOB_BYTES:
             raise SourceTooLarge(
                 f"Source is {len(content)} bytes; this database stores at most {MAX_BLOB_BYTES} bytes per source")
-        self.query("UPSERT type::thing('source_blob', $key) CONTENT $blob;", {
-            "key": source_id, "blob": {"sha256": hashlib.sha256(content).hexdigest(),
-                                       "base64": base64.b64encode(content).decode()}})
+        try:
+            self.query("UPSERT type::thing('source_blob', $key) CONTENT $blob;", {
+                "key": source_id, "blob": {"sha256": hashlib.sha256(content).hexdigest(),
+                                           "base64": base64.b64encode(content).decode()}})
+        except httpx.HTTPStatusError as error:
+            # The configured limit above can lag what the database actually enforces,
+            # in either direction, while a change rolls out. Trust the answer the
+            # database gave over our copy of its setting.
+            if error.response.status_code != 413:
+                raise
+            raise SourceTooLarge(
+                f"Source is {len(content)} bytes; the database refused it as too large") from None
 
     def get_source_bytes(self, source_id):
         import base64
