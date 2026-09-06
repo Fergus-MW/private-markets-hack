@@ -4,6 +4,10 @@ from datetime import date
 
 
 def terms_as_of(graph, fund_id, as_of, known_at=None):
+    # recorded_at is an ISO string, so accept either form of the same instant
+    # rather than compare a date against it and raise.
+    if known_at is not None and not isinstance(known_at, str):
+        known_at = known_at.isoformat()
     fund_id = graph.resolve(fund_id)
     selected = {}
     for source in graph.state.sources.values():

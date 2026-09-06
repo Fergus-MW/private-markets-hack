@@ -117,11 +117,24 @@ def message_text(graph, source_id):
     return ids, "\n".join(graph.state.sources[i].text for i in sorted(ids))
 
 
+def sender_from_graph(graph, source_id):
+    """Mail ingested by a connector carries no sender in its metadata, but parsing the
+    .eml already recorded who sent it. Read that rather than leave the investor
+    resolvable only by a name appearing in the text."""
+    for edge in graph.state.edges.values():
+        if edge.predicate != "sent" or edge.object != source_id:
+            continue
+        person = graph.state.entities.get(graph.resolve(edge.subject))
+        if person is not None and getattr(person, "emails", None):
+            return sorted(person.emails)[0]
+    return None
+
+
 def propose_for_source(graph, source_id, sender=None, as_of=None):
     """Attach proposals to a message source. Idempotent: the same message yields the same
     proposal ids, and an existing ratified proposal is never reset to proposed."""
     source = graph.state.sources[source_id]
-    sender = sender or source.metadata.get("sender")
+    sender = sender or source.metadata.get("sender") or sender_from_graph(graph, source_id)
     as_of = as_of or date.today()
     ids, text = message_text(graph, source_id)
     lines = term_lines(text)
@@ -174,7 +187,9 @@ def ratify(graph, source_id, proposal_id, actor, reason, recorded_on=None):
         raise ValueError("Proposal is " + proposal["status"] + ", not open for ratification")
     if proposal["quote"] not in message_text(graph, source_id)[1]:
         raise ValueError("Proposal quote is no longer present in the message")
-    recorded_on = recorded_on or date.today().isoformat()
+    recorded_on = recorded_on or date.today()
+    # Sibling of propose_for_source(as_of), which takes a date. Accept both here.
+    recorded_on = recorded_on if isinstance(recorded_on, str) else recorded_on.isoformat()
     fund_id = graph.resolve(proposal["fund_id"])
     effective = date.fromisoformat(proposal["effective_from"])
     base = next((row for row in register_rows(graph, fund_id, max(effective, date.fromisoformat(recorded_on)))

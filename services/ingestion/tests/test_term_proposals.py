@@ -6,7 +6,8 @@ from unittest.mock import patch
 from app.connectors import Item
 from app.extraction import Ingestion
 from app.graph import Graph, Source, key
-from app.term_proposals import list_proposals, propose_for_source, ratify, term_lines
+from app.term_proposals import (list_proposals, propose_for_source, ratify, sender_from_graph,
+                                term_lines)
 from app.terms import terms_as_of
 
 TERMS_V2 = (
@@ -187,3 +188,62 @@ class ApiTests(unittest.TestCase):
 
     def test_unknown_source_is_404(self):
         self.assertEqual(self.client.post("/graph/term-proposals/nope/propose", json={}).status_code, 404)
+
+
+class ConnectorPathTests(unittest.TestCase):
+    """A correction reaching the user's own inbox arrives with no sender metadata."""
+
+    def setUp(self):
+        self.graph, self.fund = graph_with_register()
+
+    def connector_mail(self, text):
+        # What the Gmail connector produces: a real .eml, no "sender" in metadata.
+        raw = ("From: Kevin Gu <kevin.gu@gradient-path.com>\r\n"
+               "To: ops@marlbank.example\r\nSubject: Correction\r\n\r\n" + text)
+        return Ingestion(self.graph).ingest(item("message.eml", raw, kind="email"))
+
+    def test_sender_is_recovered_from_the_parsed_message(self):
+        source = self.connector_mail(CORRECTION)
+        self.assertEqual(sender_from_graph(self.graph, source), "kevin.gu@gradient-path.com")
+
+    def test_connector_mail_raises_the_same_proposal_as_agent_mail(self):
+        source = self.connector_mail(CORRECTION)
+        proposals = propose_for_source(self.graph, source)
+        self.assertEqual(len(proposals), 1)
+        self.assertEqual(proposals[0]["investor_matched_by"], "notices_email")
+        self.assertEqual((proposals[0]["old"], proposals[0]["new"]), ("0.0075", "0.0065"))
+        self.assertEqual(proposals[0]["status"], "proposed")
+
+    def test_it_still_proposes_nothing_the_register_cannot_place(self):
+        raw = "From: attacker@elsewhere.example\r\nSubject: x\r\n\r\nManagement fee rate: 0.10 percent per annum (clause 9)."
+        source = Ingestion(self.graph).ingest(item("hostile.eml", raw, kind="email"))
+        self.assertEqual(propose_for_source(self.graph, source), [])
+
+
+class DateArgumentTests(unittest.TestCase):
+    """ratify and terms_as_of take strings; their siblings take dates. Accept both."""
+
+    def setUp(self):
+        self.graph, self.fund = graph_with_register()
+        self.source = message(self.graph, CORRECTION)
+        self.proposal = propose_for_source(self.graph, self.source, "kevin.gu@gradient-path.com")[0]
+
+    def rate(self, known_at):
+        rows = terms_as_of(self.graph, self.fund, date(2026, 9, 30), known_at)["rows"]
+        return next(r["mgmt_fee_rate_pa"] for r in rows if r["investor_id"] == "7335_02891")
+
+    def test_ratify_accepts_a_date_as_well_as_a_string(self):
+        ratify(self.graph, self.source, self.proposal["proposal_id"], "Kevin Gu", "ok",
+               recorded_on=date(2026, 9, 6))
+        self.assertEqual(self.rate(None), "0.0065")
+
+    def test_known_at_accepts_a_date_and_agrees_with_the_string_form(self):
+        ratify(self.graph, self.source, self.proposal["proposal_id"], "Kevin Gu", "ok",
+               recorded_on="2026-09-06")
+        self.assertEqual(self.rate(date(2026, 9, 1)), "0.0075")
+        self.assertEqual(self.rate("2026-09-01T00:00:00+00:00"), "0.0075")
+        self.assertEqual(self.rate(date(2026, 9, 30)), "0.0065")
+
+
+if __name__ == "__main__":
+    unittest.main()
