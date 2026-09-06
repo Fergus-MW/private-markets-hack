@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from app.worker import (EXPORTS, GOOGLE_NATIVE, Archive, Lease, credentials_info, download, items,
                         completion_status, graph_identity, make_ingest, object_prefix,
-                        object_key, process, refresh_projects)
+                        object_key, process, refresh_projects, settled)
 
 
 class MemoryArchive:
@@ -302,6 +302,33 @@ class MultiAccountTests(unittest.TestCase):
                                        "GOOGLE_OAUTH_CREDENTIALS": '{"refresh_token": "mounted"}'})
         self.assertEqual(result, {"refresh_token": "from-secret"})
         self.assertEqual(client.access_secret_version.call_args.kwargs["name"], name)
+
+
+class SettledTests(unittest.TestCase):
+    """Raising the graph's size limit must let previously archived sources in."""
+
+    class Ingest:
+        def __init__(self, max_bytes):
+            self.max_bytes = max_bytes
+
+    def archived(self, size, reason="Source size limit"):
+        return {"status": "archive_only", "reason": reason, "size_bytes": size}
+
+    def test_a_source_archived_for_size_is_retried_once_it_fits(self):
+        self.assertFalse(settled(self.archived(5_000_000), self.Ingest(20_000_000)))
+
+    def test_it_stays_archived_while_it_still_does_not_fit(self):
+        self.assertTrue(settled(self.archived(5_000_000), self.Ingest(3_139_584)))
+
+    def test_an_unsupported_format_is_never_retried(self):
+        self.assertTrue(settled(self.archived(10, "Unsupported format"), self.Ingest(20_000_000)))
+
+    def test_ingested_and_metadata_only_records_stand(self):
+        for status in ("ingested", "metadata_only"):
+            self.assertTrue(settled({"status": status}, self.Ingest(20_000_000)))
+
+    def test_an_unknown_limit_leaves_the_record_alone(self):
+        self.assertTrue(settled(self.archived(5_000_000), object()))
 
 
 class ProjectRefreshTests(unittest.TestCase):

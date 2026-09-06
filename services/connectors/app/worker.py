@@ -172,6 +172,16 @@ class Lease:
         self.blob.delete(if_generation_match=self.generation)
 
 
+def settled(previous, ingest):
+    """Whether a prior result still stands. A source archived because it was too
+    large is not settled: raising the limit has to let it in on the next scan,
+    or the limit change quietly achieves nothing."""
+    if previous.get("status") != "archive_only" or previous.get("reason") != "Source size limit":
+        return True
+    limit = getattr(ingest, "max_bytes", None)
+    return limit is None or previous.get("size_bytes", 0) > limit
+
+
 def process(service, provider, item, archive, ingest, max_bytes, heartbeat=lambda: None, visited=(), collected=None):
     key = object_key(provider, item)
     if item["id"] in visited:
@@ -196,7 +206,8 @@ def process(service, provider, item, archive, ingest, max_bytes, heartbeat=lambd
     pipeline_version = getattr(ingest, "pipeline_version", None)
     pipeline_version = pipeline_version if isinstance(pipeline_version, str) else None
     compatible = not pipeline_version or previous and previous.get("pipeline_version") == pipeline_version
-    if previous and compatible and (ingest is None or previous["status"] in {"ingested", "archive_only", "metadata_only"}):
+    if previous and compatible and settled(previous, ingest) and (
+            ingest is None or previous["status"] in {"ingested", "archive_only", "metadata_only"}):
         return "unchanged_" + previous["status"] if pipeline_version and pipeline_version.endswith("graph") else "unchanged"
     if provider == "drive" and item["mimeType"].startswith(GOOGLE_NATIVE) and item["mimeType"] not in EXPORTS:
         record = {"provider": provider, "source": item, "status": "metadata_only",
@@ -268,8 +279,12 @@ def make_ingest(url, provider=None, account=None, tenant=None):
     max_bytes = capabilities["max_bytes"]
 
     def ingest(filename, mime, source, size, metadata=None):
-        if size > max_bytes or Path(filename).suffix.lower() not in extensions:
-            return {"status": "archive_only", "reason": "Parser size or format limit"}
+        if Path(filename).suffix.lower() not in extensions:
+            return {"status": "archive_only", "reason": "Unsupported format"}
+        if size > max_bytes:
+            # Named separately: raising the limit must let this source back in,
+            # while an unsupported format stays settled and is never retried.
+            return {"status": "archive_only", "reason": "Source size limit", "size_limit": max_bytes}
         token = fetch_id_token(Request(), url)
         options = {}
         if provider:
@@ -293,6 +308,7 @@ def make_ingest(url, provider=None, account=None, tenant=None):
         result = response.json()
         incomplete = any("skipped" in w.lower() or "not run" in w.lower() or "deferred_to_project" in w.lower() for w in result.get("warnings", []))
         return {"status": "partial" if incomplete else "ingested", **{k: result[k] for k in ("document_id", "source_id") if k in result}}
+    ingest.max_bytes = max_bytes
     if provider:
         ingest.pipeline_version = "canonical-sources-v2-user" if tenant else "canonical-sources-v1"
         if os.environ.get("GRAPH_USE_GEMINI", "false").lower() == "true":
