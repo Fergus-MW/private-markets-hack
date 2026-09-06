@@ -21,7 +21,7 @@ A project is one administration workflow for one fund, one calendar quarter, and
 
 Source nodes retain connector account, external ID, revision, SHA-256, filename, text, metadata and ingestion timestamp. Email attachments have their own source nodes and `attached_to` edges. Source revisions remain separate even when names match. Identical attachment/file bytes retain separate provenance in each connector. Parsed complex documents also link to the existing `/documents/{id}/context` API. Structured sources keep their full text directly on the source node.
 
-Edges include `sent`, `received`, `attached_to`, `mentions`, `works_for`, `manages`, `invests_in`, `for_fund`, `for_company`, `part_of`, and `received_via`. They retain evidence source and extraction method. There is no separate fact collection. Source documents and structured source rows retain the original values and provenance. `/graph/entities/{id}?as_of=2026-06-30` flattens identity redirects and relationships.
+Edges include `sent`, `received`, `attached_to`, `mentions`, `works_for`, `manages`, `administers`, `invests_in`, `for_fund`, `for_company`, `part_of`, and `received_via`. They retain evidence source and extraction method. There is no separate fact collection. Source documents and structured source rows retain the original values and provenance. `/graph/entities/{id}?as_of=2026-06-30` flattens identity redirects and relationships.
 
 ## Extraction
 
@@ -39,6 +39,7 @@ Supported structured mappings:
 - `entity_terms_v1.csv` and the equivalent XLSX: fund identity and currency; other values remain in the source table.
 - Investor terms tables: require explicit canonical `fund_id`. Investor-in-vehicle IDs create investment-account **data nodes**, not global company identities. Source rows and dated investment edges preserve their vehicle scope. This avoids merging separate investor legal entities solely because of account IDs or names.
 - Generic canonical CSV: `kind,name,id_namespace,external_id`, with optional `email` for people. Kinds are person, company or fund.
+- Explicit relationship CSV: `subject_kind,subject_name,subject_ns,subject_id,predicate,object_kind,object_name,object_ns,object_id`, with optional `valid_from` and `valid_to`. Predicates are `works_for` (person to company), `manages` and `administers` (company to fund) and `invests_in` (to a fund). Both ends resolve through their namespaced IDs, the same way the canonical CSV does, so names alone never link anything; an end that does not exist yet is created with that ID. Edges keep their dates, and `/graph/entities/{id}?as_of=` filters on them.
 
 ## Configuration and API
 
