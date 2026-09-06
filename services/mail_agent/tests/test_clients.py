@@ -1,0 +1,48 @@
+import os
+import unittest
+from unittest.mock import Mock, patch
+
+from mail_agent.clients import GraphClient, route
+
+
+class ClientTests(unittest.TestCase):
+    PROJECT = "a" * 64
+
+    def response(self, name, args):
+        response = Mock()
+        response.json.return_value = {"candidates": [{"finishReason": "STOP", "content": {"parts": [
+            {"functionCall": {"name": name, "args": args}}]}}]}
+        return response
+
+    def routed(self, name, args):
+        projects = [{"key": self.PROJECT, "name": "Fund A"}]
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test", "GEMINI_MODEL": "gemini-3.5-flash"}), \
+                patch("mail_agent.clients.httpx.post", return_value=self.response(name, args)):
+            return route("request", projects)
+
+    def test_project_question_and_graph_links_are_validated_tool_calls(self):
+        self.assertEqual(self.routed("answer_project_question", {
+            "project_id": self.PROJECT, "question": "Who manages the fund?"})["tool_call"]["name"],
+            "answer_project_question")
+        self.assertEqual(self.routed("get_project_graph_link", {
+            "project_id": self.PROJECT})["tool_call"]["name"], "get_project_graph_link")
+        self.assertEqual(self.routed("get_workspace_graph_link", {})["tool_call"]["name"],
+                         "get_workspace_graph_link")
+
+    def test_project_tools_cannot_select_another_accounts_project(self):
+        with self.assertRaises(ValueError):
+            self.routed("get_project_graph_link", {"project_id": "b" * 64})
+        with self.assertRaises(ValueError):
+            self.routed("answer_project_question", {"project_id": "b" * 64, "question": "Tell me"})
+
+    def test_visualization_links_are_private_frontend_routes(self):
+        with patch.dict(os.environ, {"FRONTEND_PUBLIC_ORIGIN": "https://frontend.example/"}):
+            self.assertEqual(GraphClient.visualization(), "https://frontend.example/graphs/workspace")
+            self.assertEqual(GraphClient.visualization(self.PROJECT),
+                             "https://frontend.example/graphs/" + self.PROJECT)
+            with self.assertRaises(ValueError):
+                GraphClient.visualization("../other")
+
+
+if __name__ == "__main__":
+    unittest.main()

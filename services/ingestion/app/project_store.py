@@ -143,6 +143,30 @@ COMMIT TRANSACTION;
         return self.query("SELECT * FROM type::table($table) ORDER BY key LIMIT $limit START $offset;",
                           {"table": table, "limit": limit, "offset": offset})[0]["result"]
 
+    def nodes_of_kind(self, kind, run_id=None, limit=200):
+        if kind not in {"finding", "check_result"}:
+            raise ValueError("Unknown project node kind")
+        clause = "AND run_id = $run " if run_id else ""
+        rows = self.query(f"SELECT * FROM node WHERE kind = $kind {clause}ORDER BY key LIMIT $limit;",
+                          {"kind": kind, "run": run_id, "limit": limit})[0]["result"]
+        for row in rows:
+            row.pop("id", None)
+        return rows
+
+    def agent_run(self, job_id):
+        if not re.fullmatch(r"[a-f0-9]{64}", job_id):
+            raise ValueError("Expected workflow job ID")
+        rows = self.query(
+            "SELECT * FROM run WHERE job_id = $job ORDER BY started_at DESC LIMIT 1;",
+            {"job": job_id},
+        )[0]["result"]
+        if not rows:
+            return None
+        row = rows[0]
+        row.pop("id", None)
+        row.pop("claim_token", None)
+        return row
+
     def claim(self, run, token):
         self.query("""
 BEGIN TRANSACTION;
@@ -160,6 +184,19 @@ UPDATE type::thing('run', $run.key) SET turn = $turn, claim_token = $lease_token
 COMMIT TRANSACTION;
 """, {"run": run, "lease_token": token})
         return self.get_record("run", run["key"])
+
+    def trace(self, run_id, token, phase, message, details=None, status="running"):
+        event = {"at": now(), "phase": phase, "status": status, "message": message}
+        if details:
+            event["details"] = details
+        self.query("""
+BEGIN TRANSACTION;
+LET $current = SELECT * FROM ONLY type::thing('run', $key);
+IF $current.claim_token != $lease_token OR $current.status != 'running' { THROW 'Run lease lost'; };
+UPDATE type::thing('run', $key) SET phase = $phase, updated_at = $at, trace += $event;
+COMMIT TRANSACTION;
+""", {"key": run_id, "lease_token": token, "phase": phase, "at": event["at"], "event": event})
+        return event
 
     def finish(self, run_id, token, status, output):
         self.query("""

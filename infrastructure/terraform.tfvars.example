@@ -22,3 +22,9 @@ invoker_members = ["user:REPLACE@example.com"]
 # Populate frontend-oauth-client-secret and frontend-session-key through Secret Manager.
 # Existing resources managed outside this state must be imported before applying.
 # Terraform runs the project namespace migration through gcloud/IAP; it does not build images.
+
+# Email agent (see services/mail_agent/README.md):
+# mail_enabled = true
+# agentmail_inbox_id = "zeroadmin@agentmail.to"
+# mail_image = "europe-west2-docker.pkg.dev/PROJECT/services/agent-mail@sha256:..."
+# mail_gemini_model = "gemini-3.5-flash"

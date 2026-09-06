@@ -32,6 +32,7 @@ steps:
     args:
       - -ceu
       - |
+        if [ "${_DEPLOY}" != "true" ]; then exit 0; fi
         IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/services/ingestion"
         DIGEST=$$(gcloud artifacts docker images describe "$$IMAGE:$BUILD_ID" --format='value(image_summary.digest)')
         test -n "$$DIGEST"
@@ -41,6 +42,7 @@ steps:
 
 substitutions:
   _REGION: europe-west2
+  _DEPLOY: 'true'
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: E2_HIGHCPU_8

@@ -66,6 +66,68 @@ def schema():
     return GraphState.model_json_schema()
 
 
+@router.get("/graph/views")
+def graph_views():
+    """The current identity's canonical graph and associated project graphs."""
+    _, graph = load()
+    projects = sorted((e for e in graph.state.entities.values()
+                       if e.kind == "project" and not e.merged_into), key=lambda e: (e.name, e.key))
+    return {"graphs": [{"id": "workspace", "name": "Your knowledge", "kind": "workspace",
+                        "description": "Your connected people, companies, funds and sources."}] +
+            [{"id": e.key, "name": e.name, "kind": "project",
+              "description": f"{e.quarter} · {e.workflow_type}"} for e in projects]}
+
+
+def visual_graph(nodes, edges):
+    """Send only render metadata, never document text, blobs or run credentials."""
+    visible = {row["key"]: {"id": row["key"],
+               "label": row.get("name") or row.get("filename") or row.get("kind", "Record").replace("_", " "),
+               "kind": row.get("kind", "record")} for row in nodes if not row.get("merged_into")}
+    links = [{"id": row["key"], "source": row["subject"], "target": row["object"],
+              "label": row["predicate"]} for row in edges
+             if row["subject"] in visible and row["object"] in visible]
+    return {"nodes": list(visible.values()), "edges": links}
+
+
+@router.get("/graph/views/{view_id}")
+def graph_view(view_id: str):
+    _, graph = load()
+    if view_id == "workspace":
+        rows = [e.model_dump(mode="json") for e in graph.state.entities.values()]
+        rows.extend(s.model_dump(mode="json", exclude={"text", "metadata"}) for s in graph.state.sources.values())
+        return {"name": "Your knowledge", **visual_graph(rows, [e.model_dump() for e in graph.state.edges.values()])}
+    entity = graph.state.entities.get(view_id)
+    if not entity or entity.kind != "project" or entity.merged_into:
+        raise HTTPException(404, "Graph not found in your workspace")
+    from app.project_api import local_store
+    from app.projects import all_records
+    try:
+        store = local_store(view_id)
+        rows = [row for table in ("node", "artifact", "decision", "run") for row in all_records(store, table)]
+        return {"name": entity.name, **visual_graph(rows, all_records(store, "link"))}
+    except HTTPException as error:
+        if error.status_code not in {404, 503}:
+            raise
+        # A project is useful before its first workflow materializes a separate
+        # project database. Return its canonical, source-scoped neighborhood.
+        selected = set(entity.sources)
+        selected.update(edge.subject for edge in graph.state.edges.values()
+                        if edge.predicate == "part_of" and edge.object == view_id
+                        and edge.subject in graph.state.sources)
+        visible = {view_id, entity.fund_id, entity.management_company_id} | selected
+        for edge in graph.state.edges.values():
+            if edge.source_id in selected:
+                visible.update(node for node in (edge.subject, edge.object)
+                               if node in graph.state.sources or
+                               (node in graph.state.entities and graph.state.entities[node].kind != "project"))
+        rows = [graph.state.entities[node].model_dump(mode="json") if node in graph.state.entities
+                else graph.state.sources[node].model_dump(mode="json", exclude={"text", "metadata"})
+                for node in visible if node in graph.state.entities or node in graph.state.sources]
+        edges = [edge.model_dump(mode="json") for edge in graph.state.edges.values()
+                 if edge.subject in visible and edge.object in visible]
+        return {"name": entity.name, **visual_graph(rows, edges)}
+
+
 @router.post("/connectors/sync")
 def sync(request: SyncRequest):
     from app.identity import tenant

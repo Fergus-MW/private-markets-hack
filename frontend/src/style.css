@@ -26,3 +26,79 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--peach); outline
   .google-button { padding: 16px 20px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+
+[hidden] { display: none !important; }
+button { font: inherit; cursor: pointer; }
+.site-nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.wordmark { font-size: 23px; font-weight: 700; text-decoration: none; color: #f5f1ec; letter-spacing: -1px; }
+.wordmark span { font-size: 12px; font-weight: 450; letter-spacing: 0; color: #a69aa7; margin-left: 8px; }
+.nav-link { color: #d9d0dc; text-decoration: none; font-size: 13px; }
+.nav-link span { margin-left: 10px; color: var(--peach); }
+.graph-selection { width: min(760px, 100%); }
+.eyebrow { display: block; color: #c4a3b9; font-size: 10px; font-weight: 600; letter-spacing: 2px; line-height: 1.6; }
+.graph-selection > .eyebrow { margin-bottom: 21px; color: var(--peach); }
+.graph-selection h1 { font-size: clamp(40px, 5vw, 65px); }
+.intro { color: #b4a9b8; font-size: 17px; margin: 20px 0 40px; }
+.graph-menu { display: grid; gap: 12px; }
+.graph-option { display: flex; align-items: center; gap: 23px; padding: 25px; border-radius: 14px; border: 1px solid #ffffff20; background: #171219b8; backdrop-filter: blur(18px); color: #f5f1ec; text-decoration: none; transition: border-color .2s, background .2s, transform .2s; }
+.graph-option:hover { border-color: #ff826280; background: #251a28dd; transform: translateY(-2px); }
+.graph-icon { display: grid; place-items: center; flex: 0 0 51px; height: 51px; font-size: 30px; color: var(--peach); border: 1px solid #ff826235; border-radius: 12px; background: linear-gradient(135deg, #ff00ae15, #ff826208); }
+.graph-option-copy { display: grid; gap: 7px; min-width: 0; }
+.graph-option-copy strong { font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
+.graph-option-copy > span:last-child { color: #a99fad; font-size: 13px; line-height: 1.5; }
+.option-arrow { margin-left: auto; color: var(--peach); font-size: 25px; }
+.graph-view { overflow: hidden; }
+.graph-view .shell { padding: 0; height: 100dvh; min-height: 0; }
+#graph-canvas { position: absolute; inset: 0; background: radial-gradient(ellipse at 35% 45%, #1c1122, #0c0c0c 75%); }
+.glass { border: 1px solid #ffffff1c; border-radius: 12px; background: #141116dd; backdrop-filter: blur(18px); }
+.viewer-header { position: absolute; inset: 22px 24px auto; display: flex; gap: 14px; align-items: flex-start; pointer-events: none; }
+.viewer-header > * { pointer-events: auto; }
+.back-link { display: inline-flex; gap: 12px; padding: 17px 20px; color: #eee4ed; font-size: 13px; text-decoration: none; white-space: nowrap; }
+.back-link:hover { border-color: var(--peach); }
+.viewer-title { padding: 12px 20px; max-width: min(55vw, 500px); }
+.viewer-title .eyebrow { font-size: 8px; }
+.viewer-title strong { display: block; font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.graph-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(90%, 470px); text-align: center; color: #b5a9b8; }
+.graph-message h2, .graph-menu h2 { font-size: 23px; color: #f5f1ec; font-weight: 450; }
+.graph-message p { line-height: 1.6; }
+.retry-button { color: #f5f1ec; background: #332334; border: 1px solid #ff826255; border-radius: 8px; padding: 12px 18px; }
+.viewer-footer { position: absolute; inset: auto 24px 22px; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; gap: 12px; }
+.viewer-footer > * { pointer-events: auto; }
+.graph-count { margin: 0; padding: 14px 18px; font-size: 12px; color: #b7aabd; }
+.camera-controls { display: flex; padding: 3px; }
+.camera-controls button, .detail-close { border: 0; background: transparent; color: #f5f1ec; width: 42px; height: 38px; font-size: 22px; border-radius: 8px; }
+.camera-controls button:hover, .detail-close:hover { background: #ffffff10; }
+.node-detail { position: absolute; top: 105px; right: 24px; width: min(320px, calc(100vw - 48px)); padding: 22px; }
+.node-detail h2 { font-size: 22px; font-weight: 500; overflow-wrap: anywhere; }
+.node-detail > p:last-child { color: #b7aabd; font-size: 13px; }
+.detail-close { position: absolute; top: 7px; right: 7px; }
+@media (max-width: 600px) {
+  .wordmark span { display: none; }
+  .graph-option { gap: 15px; padding: 19px; }
+  .graph-icon { flex-basis: 40px; height: 40px; }
+  .viewer-header { inset: 14px 14px auto; gap: 8px; }
+  .back-link { padding: 17px 13px; }
+  .viewer-title { padding: 12px; }
+  .viewer-footer { inset: auto 14px 14px; }
+  .graph-count { padding: 12px; font-size: 10px; }
+}
+.ingesting { width: 100%; max-width: 620px; margin: 0 auto; text-align: left; }
+.ingesting h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 450; margin: 6px 0 26px; }
+.progress-track { height: 6px; border-radius: 999px; background: #ffffff14; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--pink), var(--peach)); transition: width .6s ease; }
+.progress-meta { display: flex; justify-content: space-between; font-size: 12px; color: #b5a9b8; margin-top: 8px; }
+.ingest-summary { font-size: 13px; line-height: 1.7; color: #d6ccd4; margin: 18px 0 0; }
+.provider-list { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 8px; }
+.provider-row { display: flex; align-items: baseline; gap: 10px; font-size: 13px; padding: 10px 12px; border: 1px solid #ffffff14; border-radius: 10px; background: #14111699; }
+.provider-name { font-weight: 550; min-width: 104px; }
+.provider-status { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #c4a3b9; }
+.status-completed { color: #00f8e1; }
+.status-failed, .status-unknown { color: #ffb4a0; }
+.provider-detail { margin-left: auto; color: #9c93a4; font-size: 12px; text-align: right; }
+.trace-heading { margin: 26px 0 8px; }
+.trace-log { list-style: none; margin: 0; padding: 12px; max-height: 190px; overflow-y: auto; border: 1px solid #ffffff14; border-radius: 10px; background: #0f0d1199; font-size: 12px; line-height: 1.9; color: #9c93a4; font-variant-numeric: tabular-nums; }
+.trace-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trace-line:last-child { color: #d6ccd4; }
+#ingest-action { margin-top: 24px; }
+.retry-link { color: #c4a3b9; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .progress-fill { transition: none; } }

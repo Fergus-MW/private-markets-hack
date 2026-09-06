@@ -197,7 +197,7 @@ def process(service, provider, item, archive, ingest, max_bytes, heartbeat=lambd
     pipeline_version = pipeline_version if isinstance(pipeline_version, str) else None
     compatible = not pipeline_version or previous and previous.get("pipeline_version") == pipeline_version
     if previous and compatible and (ingest is None or previous["status"] in {"ingested", "archive_only", "metadata_only"}):
-        return "unchanged"
+        return "unchanged_" + previous["status"] if pipeline_version and pipeline_version.endswith("graph") else "unchanged"
     if provider == "drive" and item["mimeType"].startswith(GOOGLE_NATIVE) and item["mimeType"] not in EXPORTS:
         record = {"provider": provider, "source": item, "status": "metadata_only",
                   "reason": "No supported content export for this Google-native type", "raw_object": None}
@@ -274,6 +274,7 @@ def make_ingest(url, provider=None, account=None, tenant=None):
             original = metadata["source"]
             options["data"] = {"envelope": json.dumps({"provider": provider, "account": account,
                 "external_id": original["id"], "revision": str(original.get("version", "")),
+                "use_gemini": os.environ.get("GRAPH_USE_GEMINI", "false").lower() == "true",
                 "metadata": {"connector_archive": metadata["raw_object"], **original}})}
         headers = {"Authorization": "Bearer " + token}
         if tenant:
@@ -283,9 +284,12 @@ def make_ingest(url, provider=None, account=None, tenant=None):
                                  files={"file": (filename, source, mime)}, timeout=(30, 910), **options)
         response.raise_for_status()
         result = response.json()
-        return {"status": "ingested", **{k: result[k] for k in ("document_id", "source_id") if k in result}}
+        incomplete = any("skipped" in w.lower() or "not run" in w.lower() or "deferred_to_project" in w.lower() for w in result.get("warnings", []))
+        return {"status": "partial" if incomplete else "ingested", **{k: result[k] for k in ("document_id", "source_id") if k in result}}
     if provider:
         ingest.pipeline_version = "canonical-sources-v2-user" if tenant else "canonical-sources-v1"
+        if os.environ.get("GRAPH_USE_GEMINI", "false").lower() == "true":
+            ingest.pipeline_version += "-graph"
     return ingest
 
 
@@ -333,12 +337,27 @@ def main():
     bucket = storage.Client().bucket(os.environ["CONNECTOR_BUCKET"])
     tenant = connector_tenant() if os.environ.get('GRAPH_MULTI_USER', 'false').lower() == 'true' else None
     prefix = (tenant + '/' if tenant and tenant.startswith('u-') else object_prefix())
+    run_id = os.environ.get("INGESTION_RUN_ID", "")
+    if run_id:
+        if not re.fullmatch(r"[a-f0-9]{64}", run_id) or not tenant or not re.fullmatch(r"u-[a-f0-9]{16}", tenant):
+            raise ValueError("Invalid account ingestion run")
+        prefix = tenant + "/" + provider + "/"
+    counts = {}
+    started = time.time()
+    def progress(status, error_type=None):
+        if run_id:
+            Archive(bucket).write(f"ingestion-status/{tenant}/{run_id}/{provider}.json", {
+                "run_id": run_id, "tenant": tenant, "provider": provider,
+                "status": status, "started_at": started, "updated_at": time.time(),
+                "counts": counts, "error_type": error_type,
+            })
+    progress("starting")
     lease = Lease(bucket, prefix)
     if not lease.acquire():
-        LOG.info("Another execution holds the connection lease")
-        return
-    counts = {}
+        progress("blocked", "ActiveExecution")
+        raise RuntimeError("Another execution holds the connection lease")
     try:
+        progress("running")
         url = os.environ.get("INGESTION_URL", "").rstrip("/")
         ingest = make_ingest(url, provider, os.environ["CONNECTOR_BUCKET"] + ("/" + prefix.rstrip("/") if prefix else ""), tenant=tenant) if url else None
         for item in items(service, provider, os.environ.get("SOURCE_QUERY", ""), os.environ.get("DRIVE_ID", "")):
@@ -355,10 +374,16 @@ def main():
                     raise
                 status = "failed"
             counts[status] = counts.get(status, 0) + 1
+            progress("running")
         Archive(bucket, prefix).write("state/last_run.json", {"finished_at": time.time(), "counts": counts})
         LOG.info("Scan finished counts=%s", counts)
         if counts.get("failed"):
             raise RuntimeError("Scan has failed items; rerun to retry them")
+        incomplete = any(counts.get(k) for k in ("partial", "archive_only", "metadata_only", "unchanged_archive_only", "unchanged_metadata_only"))
+        progress("partial" if incomplete else "completed")
+    except Exception as error:
+        progress("failed", type(error).__name__)
+        raise
     finally:
         lease.release()
 

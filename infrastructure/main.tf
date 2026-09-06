@@ -282,6 +282,13 @@ resource "google_cloud_run_v2_service" "ingestion" {
         name  = "GRAPH_MULTI_USER"
         value = "true"
       }
+      dynamic "env" {
+        for_each = var.mail_enabled && var.mail_image != null ? { GEMINI_MODEL = var.mail_gemini_model, GOOGLE_CLOUD_PROJECT = google_project.main.project_id, FRONTEND_PUBLIC_ORIGIN = coalesce(var.frontend_public_origin, "") } : {}
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
       env {
         name = "GRAPH_IDENTITY_SECRET"
         value_source {
@@ -301,7 +308,7 @@ resource "google_cloud_run_v2_service" "ingestion" {
       }
     }
   }
-  depends_on = [google_secret_manager_secret_iam_member.graph_identity_ingestion, terraform_data.project_namespace, google_secret_manager_secret_iam_member.ingestion,
+  depends_on = [google_project_iam_member.mail_models, google_secret_manager_secret_iam_member.graph_identity_ingestion, terraform_data.project_namespace, google_secret_manager_secret_iam_member.ingestion,
     google_secret_manager_secret_iam_member.ingestion_project_provisioner,
   google_secret_manager_secret_iam_member.ingestion_project_secret]
 }

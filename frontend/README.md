@@ -1,6 +1,6 @@
 # 60x connection screen
 
-A vanilla JavaScript / Vite frontend with a Three.js knowledge graph. The palette follows the rainbow accent on [60x.ai](https://www.60x.ai/): violet `#5a18ff`, blue `#00adfc`, cyan `#00f8e1`, purple `#cf00e4`, pink `#ff00ae`, peach `#ff8262`, with warm ivory and near-black. The separate black overlay is a radial gradient from **80% opacity at the centre to 50% at the edges**. Motion pauses offscreen and respects reduced-motion preferences. The screen contains only a title and the Google connection button; authorization errors appear only when needed.
+A vanilla JavaScript / Vite frontend with a Three.js knowledge graph. The palette follows the rainbow accent on [60x.ai](https://www.60x.ai/): violet `#5a18ff`, blue `#00adfc`, cyan `#00f8e1`, purple `#cf00e4`, pink `#ff00ae`, peach `#ff8262`, with warm ivory and near-black. The separate black overlay is a radial gradient from **80% opacity at the centre to 50% at the edges**. Motion pauses offscreen and respects reduced-motion preferences. The landing page includes Google connection and navigation to the private graph explorer; authorization errors appear only when needed.
 
 ## Local preview
 
@@ -45,3 +45,11 @@ Google consent needs real configured credentials and a browser; local automated 
 npm test
 npm run build
 ```
+
+## Knowledge graph explorer
+
+`/graphs` lists the signed-in account’s canonical graph and associated project graphs. `/graphs/workspace` and `/graphs/<project-id>` open a full-viewport Sigma.js 3 / Graphology WebGL viewer, with pan/zoom, fit, node selection, neighbor highlighting and an All graphs link. Direct links and refreshes work in both Vite and the production server. Project graphs must have been materialized by a workflow; opening one never creates or modifies it.
+
+The ingestion service exposes `/graph/views` and `/graph/views/<id>` through the existing authenticated frontend proxy. Catalog membership and project reads use the request identity. Responses contain only node IDs, names, kinds and relationship metadata; source text, file blobs and run credentials are excluded. Deploy the frontend and ingestion changes together.
+
+The renderer loads only on graph routes. Missing coordinates receive deterministic initial positions, followed by a bounded ForceAtlas2 Web Worker layout with Barnes–Hut optimization. Supplied coordinates bypass layout. Labels and edges hide during camera movement, and navigation disposes the renderer and worker. Reduced-motion users see the settled layout. This version uses JSON and Graphology objects; binary transport, stored layouts, community aggregation and a measured 10k-node/100k-edge frame-rate benchmark remain future work.
