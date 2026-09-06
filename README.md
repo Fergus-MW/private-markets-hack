@@ -87,55 +87,159 @@ acted on automatically.
 
 ---
 
-## What you see
+## The experience, start to finish
 
-### Connect — [frontend-gucopvqxoq-nw.a.run.app](https://frontend-gucopvqxoq-nw.a.run.app/)
-A single page. One Google button. It asks for Gmail and Drive read access together —
-one authorization covers every connector. Tokens never reach the browser; they are
-written to a per-account secret only that account's importer can read.
+### 1. You connect — one button, once
 
-### Building your graph
-After connecting, a progress view shows real progress and nothing invented: per-provider
-status, items checked, and a trace line for each actual change the backend reported. A
-provider's bar only reaches its full share when that provider genuinely finishes.
+[**frontend-gucopvqxoq-nw.a.run.app**](https://frontend-gucopvqxoq-nw.a.run.app/) is a
+single page with a single Google button. It asks for Gmail and Drive **read** access
+together, in one consent screen, because one authorization covers every connector — you
+are never sent back to Google a second time to add another integration. Partial consent
+is rejected: you either grant both or nothing is stored.
 
-### Knowledge graph explorer — `/graphs`
-Your workspace graph and each project's graph, rendered full-viewport in WebGL with
-pan, zoom, fit, node selection and neighbour highlighting. Opening a project graph never
-creates or modifies it. Responses carry only node IDs, names, kinds and relationships —
-no source text, no file contents, no credentials.
+Your tokens never touch the browser. They are written to a secret whose name is derived
+from your verified email address, readable only by the importer that runs on your
+behalf. There is no shared slot, so one person's connection cannot overwrite or reach
+another's.
 
-### QC gate dashboard — `/dashboard`
-The main product surface. Pick a project, and you get one run's result:
+The moment the connection lands, two things happen at once:
+
+- an **ingestion run** is queued for your account, and
+- a **welcome email** is queued from your agent.
+
+### 2. You watch your graph get built
+
+You are dropped straight onto a live progress view — you don't have to go looking for it.
+It shows:
+
+- a **progress bar** that is honest. A provider only reaches its full share of the bar
+  when it has genuinely finished; while running it asymptotically approaches that share
+  and never touches it. The bar shows 100% only when the state is actually `completed`.
+- a **per-provider row** for Google Drive and Gmail — status, items checked, and a
+  breakdown of what happened to them: ingested, already up to date, archived, metadata
+  only, shortcuts, failed.
+- an **AGENT ACTIVITY log**, timestamped, one line per real change the backend reported.
+  No invented steps, no fake "analysing…" filler.
+
+When the graph is ready it says so and takes you to `/graphs`. When it finishes *without*
+a ready graph — a connector failed, or there were no supported files — it says that
+plainly and offers the partial view instead of rounding up to success.
+
+### 3. You explore what it found
+
+`/graphs` lists your workspace graph plus a graph for each project. Opening one gives a
+full-viewport WebGL view — pan, zoom, fit, click a node to select it and highlight its
+neighbours — of the people, companies, funds, documents and quarterly projects it
+extracted, and the links between them.
+
+Opening a project graph never creates or modifies it. The data behind the view carries
+only node IDs, names, kinds and relationship metadata — no source text, no file bytes,
+no credentials.
+
+### 4. Meanwhile, the agent has already emailed you
+
+This is the part that changes how the product feels. **You do not have to come back to
+the website to use it.** The welcome email introduces your agent and explains that you
+give it work by replying to that address — and that you never need to sign in to do so.
+
+It tells you what is happening right now (it is reading your Drive and Gmail, and will
+write again the moment the graph is ready), how it scopes work, the two kinds of job it
+does, and how to phrase a request.
+
+Then it emails you again when ingestion finishes — and it distinguishes the endings
+rather than flattening them:
+
+> *"Good news. Your files are ingested and your knowledge graph is built and ready to
+> use. Drive and Gmail both finished, covering 412 items that were ingested or already
+> up to date."*
+
+versus *"the scans finished but found no supported files"*, versus *"I ingested 412
+items, and some files or a connector did not complete, so your graph is not fully ready
+— reply 'retry ingestion' and I will pick up where I left off."* It never tells you the
+graph is ready when it isn't.
+
+### 5. You work by replying in plain English
+
+You scope work to a project — one fund, one quarter, one job — and usually the fund name
+and quarter are all it needs to find the right one.
+
+**The two kinds of work it does:**
+
+**"Do a first run-through for Fund A, Q2 2026."** — for a deliverable that doesn't exist
+yet. A production agent drafts it as a workbook and writes down the delivery rules it
+inferred, quoting the source text behind each one. A second, independent agent reviews
+that draft against the same evidence and lists what remains unresolved. You get the
+workbook, the rules, and a straight account of what is missing. Where it cannot find a
+number it says so rather than filling the gap with a plausible one.
+
+**"Run QC for Fund A, Q2 2026."** — for a deliverable that already exists. A fixed,
+version-pinned checker runs your loader file or terms schedule against the source data.
+The agents around it choose the inputs and explain the outcome; **they have no power to
+overrule a finding.** Terms checks additionally refuse to run until a named person has
+ratified the terms snapshot. Afterwards you get a dashboard link.
+
+**Everything else you can ask:**
+
+| You write | It does |
+|---|---|
+| *"What did the QC gate find?"* / *"Why was that blocked?"* | Reads back what is on the record. Runs nothing again, materialises nothing |
+| *"What is the management fee basis for Fund A?"* | Answers from that project's own documents and quotes the source. If they don't answer it, it says so |
+| *"How is that task going?"* — add *"with logs"* | Live status and current phase while something runs; with logs, the phase-by-phase event stream |
+| *"How is my ingestion going?"* / *"Retry ingestion"* | Progress, or a restart that reuses everything already done |
+| *"Show me the graph for Fund A"* / *"show me my knowledge graph"* | A link — you'll need to be signed in to open it |
+
+**What it sends you:** a start email before it dispatches work, a completion email after
+— including when the result is *blocked* or *failed*, never only on success — the draft
+workbook itself, a link to the QC dashboard, a link to a graph, or a cited answer to a
+question. First-run workbooks are also dropped into a **`Private markets drafts`** folder
+in your own Google Drive, using a scope that only ever grants access to files this
+application itself created; it can never read anything already in your account.
+
+**How it works underneath:** your reply reaches an AgentMail inbox. A coordinator model
+turns it into a real function call — `trigger_qc_gate`, `trigger_first_run`,
+`explain_run`, `answer_project_question`, `check_workflow_status`, `check_ingestion_status`,
+`retry_ingestion`, or one of the link tools — and dispatches a separate job through Cloud
+Tasks. Each running job keeps a durable trace in its own project database: timestamped
+phase transitions, evidence and artifact counts, checker state, delivery state. That
+trace is what a later *"status?"* reads, which is why asking for status never starts a
+second run.
+
+Four things help it help you: name the fund and the quarter; send one request per email
+(ask for two workflows at once and it will ask you to pick); if it names a missing input,
+send it and ask again; and if your intent is ambiguous it asks rather than guesses.
+
+One more: if someone it already recognises from your documents emails it directly, it
+files their message and attachments into your graph and refreshes whichever project it
+relates to. You don't forward things twice.
+
+### 6. You read the result on the QC dashboard
+
+`/dashboard` is the main product surface. Pick a project and you get one run:
 
 - **Header** — the draft's filename and hash, the entity, the as-of date, which terms
-  snapshot was used and how many facts were in force, the run ID, and which *turn* this
+  snapshot was used and how many facts were in force, the run ID, and which **turn** this
   is for this draft.
 - **Scoreboard** — counts by tier, passes out of checks run, and the total amount at
-  stake. Where both exist, it shows the pair side by side: **"No brain"** (arithmetic
-  only, no register) against **"Brain on"** (checked against terms). The difference
-  between the two columns *is* the value the register adds, shown rather than asserted.
-- **Findings**, grouped and ordered:
+  stake. Where both runs exist it shows the pair side by side: **"No brain"** (arithmetic
+  only, no register) against **"Brain on"** (checked against the terms in force). The gap
+  between those two columns *is* the value the register adds — demonstrated, not asserted.
+- **Findings**, grouped and ordered by tier then by amount at stake:
   - **Tier a** — changes a balance, an allocation, or the scope
   - **Tier b** — changes a reported line, or must be resolved before release
   - **Tier c** — hygiene
-  - **Decisions owed** — not errors: a blank the administrator must fill
+  - **Decisions owed** — *not errors*: a blank the administrator must fill
   - **Passes** — shown, not hidden
   - **Not run in this mode** — skipped, never silently counted as passed
-- **Each non-pass** expands to its evidence — the values compared — with a decision
+- **Each non-pass expands** to the evidence — the values compared — with a decision
   control: fix the draft, accept with a written reason, or escalate.
-- **History strip** — `turn 1: 43 findings → turn 2: 11 → turn 3: 2`. The reduction
-  across turns is the point of the product, so it is on the page.
-- **Artifacts** — download the exact inputs, the checker output, the findings JSON and
-  a standalone Markdown report that reads correctly outside the system that made it.
+- **History strip** — `turn 1: 43 findings → turn 2: 11 → turn 3: 2`. Reducing that curve
+  is the entire point of the product, so it is on the page.
+- **Artifacts** — download the exact inputs, the checker's own code and output, the
+  findings JSON, and a standalone Markdown report that reads correctly outside the system
+  that produced it and can be attached to an email.
 
-### By email
-You can also just reply to the agent's inbox: *"run the QC gate on Fund II Q2"*,
-*"status?"*, *"explain that last run"*. A coordinator model turns that into a real
-function call, dispatches the job, emails you when it starts and again when it finishes.
-It can also produce a first-draft workbook and drop it into a `Private markets drafts`
-folder in your own Drive — using a scope that only ever grants access to files this
-application itself created.
+A run that produced no checks never renders a scoreboard reading "0 errors caught" — it
+gets the header and the reason it stopped.
 
 ---
 ---
