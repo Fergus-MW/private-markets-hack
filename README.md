@@ -31,6 +31,8 @@ Uploads are limited to 20 MiB, expanded Office/EPUB containers to 100 MiB, and e
 
 For PDFs, the default `pdf_strategy=auto` extracts embedded text and falls back to OCR when no text is found. Choose `ocr_only` for mixed text/scanned PDFs, or `hi_res` for layout-sensitive extraction such as PDF tables. High-resolution parsing downloads its layout model on first use and can take longer. Spreadsheet formulas are not recalculated; extraction uses stored workbook content. Table HTML is preserved when the parser provides it.
 
+Contributors and coding agents: read [AGENTS.md](AGENTS.md) first. It sets the local-first test loop and the rule that `compose.yaml` and `infrastructure/*.tf` change together.
+
 ## Run locally
 
 ```sh
