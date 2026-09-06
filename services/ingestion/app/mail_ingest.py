@@ -16,6 +16,7 @@ from app.extraction import Ingestion
 from app.graph import Company, Person, Strict
 from app.graph_api import load, save
 from app.projects import materialize
+from app.term_proposals import propose_for_source
 from app.store import SourceTooLarge
 
 router = APIRouter(prefix="/mail", tags=["inbound mail"])
@@ -139,10 +140,17 @@ def ingest_mail(file: UploadFile, envelope: str = Form(...)):
         raise HTTPException(413, str(error)) from None
     except (ValueError, OverflowError, KeyError) as error:
         raise HTTPException(422, str(error)) from None
+    try:
+        # Labelled term lines become proposals awaiting a named person (PRD F3). Never applied here.
+        term_proposals = propose_for_source(graph, source_id, request.sender)
+    except (ValueError, KeyError):
+        logger.exception("Term proposals could not be derived for %s", source_id)
+        term_proposals = []
     save(store, graph)
     sources = message_sources(graph, source_id)
     return {"source_id": source_id, "sender_entity_id": entity.key if entity else None,
             "attachments": len(sources) - 1,
+            "term_proposals": term_proposals,
             "projects": refresh_projects(store, graph, [source_id]),
             "warnings": graph.state.sources[source_id].warnings}
 
