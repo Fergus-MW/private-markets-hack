@@ -36,3 +36,19 @@ gcloud builds submit https://github.com/Fergus-MW/private-markets-hack.git \
   --project=private-markets-hack --region=europe-west2 \
   --service-account=projects/private-markets-hack/serviceAccounts/ingestion-build@private-markets-hack.iam.gserviceaccount.com
 ```
+
+## Knowledge graph and multi-user rollout
+
+`workflows.tf` now owns workflow and graph identity secrets, their service access,
+plus `terraform_data.project_namespace`. The latter runs the checked-in migration
+through IAP before ingestion is updated. It bootstraps existing VMs without a
+startup-script rerun or replacement. Apply requires Python 3, gcloud and the
+operator's existing IAP/OS Login access. No database password is passed on the
+command line or fetched onto the operator's machine.
+
+After reviewing and applying the Terraform plan, build/deploy all three updated
+images: `cloudbuild.yaml`, `cloudbuild-connectors.yaml` (set `_JOBS` to the
+configured jobs), and `cloudbuild-frontend.yaml` (set `_SERVICES=frontend`). A Terraform apply alone does not
+build application code. See `services/ingestion/MULTI_USER.md` for identity flow,
+legacy-data ownership and rollout details. Production bootstrap and build upload
+have not been executed as part of this code update.

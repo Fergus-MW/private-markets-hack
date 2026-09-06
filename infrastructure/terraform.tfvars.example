@@ -14,3 +14,11 @@ invoker_members = ["user:REPLACE@example.com"]
 # }
 # connector_image = "europe-west2-docker.pkg.dev/PROJECT/services/connectors@sha256:..."
 # Add schedule = "0 */6 * * *" to an entry to poll every six hours (UTC).
+
+# Multi-user frontend (see services/ingestion/MULTI_USER.md):
+# frontend_image = "europe-west2-docker.pkg.dev/PROJECT/services/frontend@sha256:..."
+# frontend_public_origin = "https://FRONTEND_SERVICE.run.app"
+# frontend_oauth_client_id = "YOUR_WEB_OAUTH_CLIENT_ID.apps.googleusercontent.com"
+# Populate frontend-oauth-client-secret and frontend-session-key through Secret Manager.
+# Existing resources managed outside this state must be imported before applying.
+# Terraform runs the project namespace migration through gcloud/IAP; it does not build images.

@@ -1,14 +1,26 @@
 # Pushes to main build and deploy the ingestion service; Terraform owns infrastructure.
 steps:
-  - id: tests
-    name: python:3.11-slim
-    entrypoint: python
-    env: ['PYTHONPATH=services/ingestion']
-    args: ['-m', 'unittest', 'discover', '-s', 'services/ingestion/tests', '-v']
-
   - id: build
     name: gcr.io/cloud-builders/docker
     args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/ingestion:$BUILD_ID', 'services/ingestion']
+
+  - id: tests
+    name: gcr.io/cloud-builders/docker
+    args:
+      - run
+      - --rm
+      - --entrypoint=python
+      - -e
+      - PYTHONPATH=/app
+      - -v
+      - /workspace/services/ingestion/tests:/tests:ro
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/ingestion:$BUILD_ID'
+      - -m
+      - unittest
+      - discover
+      - -s
+      - /tests
+      - -v
 
   - id: push
     name: gcr.io/cloud-builders/docker

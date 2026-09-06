@@ -7,13 +7,31 @@ SAVE = "UPSERT type::thing('document', $document.key) CONTENT $document;"
 
 
 class Store:
+    def __init__(self, *, database=None, namespace=None, user=None, password=None, auth_level=None):
+        if database is None and namespace is None:
+            from app.identity import tenant
+            if tenant():
+                from app.project_store import provision_database, database_password
+                import hashlib
+                database = 'user_' + hashlib.sha256(tenant().encode()).hexdigest()
+                provision_database(database)
+                namespace, user, password, auth_level = 'projects', 'workflow', database_password(database), 'database'
+            elif os.environ.get('GRAPH_MULTI_USER', 'false').lower() == 'true':
+                raise ValueError('User identity required for canonical storage')
+        database, namespace = database or 'documents', namespace or 'markets'
+        self.database, self.namespace = database, namespace
+        self.user = user if user is not None else os.environ.get("SURREAL_USER", "ingestion")
+        self.password = password if password is not None else os.environ.get("SURREAL_PASSWORD", "")
+        self.auth_level = auth_level or os.environ.get("SURREAL_AUTH_LEVEL", "database")
+
     def query(self, sql, variables=None):
         with httpx.Client(timeout=60) as client:
             url = os.environ["SURREAL_URL"].rstrip("/")
-            credentials = {"user": os.environ.get("SURREAL_USER", "ingestion"),
-                           "pass": os.environ["SURREAL_PASSWORD"]}
-            if os.environ.get("SURREAL_AUTH_LEVEL", "database") == "database":
-                credentials.update({"NS": "markets", "DB": "documents"})
+            credentials = {"user": self.user, "pass": self.password}
+            if self.auth_level in {"database", "namespace"}:
+                credentials["NS"] = self.namespace
+            if self.auth_level == "database":
+                credentials["DB"] = self.database
             signin = client.post(url + "/signin", headers={"Accept": "application/json"}, json=credentials)
             signin.raise_for_status()
             token = signin.json().get("token")
@@ -21,7 +39,7 @@ class Store:
                 raise RuntimeError("SurrealDB authentication failed")
             response = client.post(
                 url + "/rpc",
-                headers={"Accept": "application/json", "Surreal-NS": "markets", "Surreal-DB": "documents",
+                headers={"Accept": "application/json", "Surreal-NS": self.namespace, "Surreal-DB": self.database,
                          "Authorization": "Bearer " + token},
                 json={"id": 1, "method": "query", "params": [sql, variables or {}]},
             )
@@ -36,6 +54,18 @@ class Store:
 
     def save(self, document):
         self.query(SAVE, {"document": document})
+
+    def save_source_bytes(self, source_id, content):
+        import base64
+        import hashlib
+        self.query("UPSERT type::thing('source_blob', $key) CONTENT $blob;", {
+            "key": source_id, "blob": {"sha256": hashlib.sha256(content).hexdigest(),
+                                       "base64": base64.b64encode(content).decode()}})
+
+    def get_source_bytes(self, source_id):
+        import base64
+        rows = self.query("SELECT * FROM type::thing('source_blob', $key);", {"key": source_id})[0]["result"]
+        return base64.b64decode(rows[0]["base64"], validate=True) if rows else None
 
     def get(self, key):
         rows = self.query("SELECT * FROM type::thing('document', $key);", {"key": key})[0]["result"]

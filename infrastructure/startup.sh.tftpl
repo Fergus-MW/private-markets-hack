@@ -21,6 +21,7 @@ secret() {
 }
 ROOT_PASSWORD=$(secret surrealdb-root-password)
 INGESTION_PASSWORD=$(secret surrealdb-ingestion-password)
+PROJECT_PROVISIONER_PASSWORD=$(secret surrealdb-project-provisioner-password)
 umask 077
 printf 'SURREAL_USER=root\nSURREAL_PASS=%s\n' "$ROOT_PASSWORD" > /run/surrealdb.env
 docker pull '${surreal_image}'
@@ -31,7 +32,7 @@ for attempt in $(seq 1 60); do
   sleep 2
 done
 # Initialise a database-scoped writer. Random passwords are alphanumeric.
-export ROOT_PASSWORD INGESTION_PASSWORD
+export ROOT_PASSWORD INGESTION_PASSWORD PROJECT_PROVISIONER_PASSWORD
 python3 - <<'BOOTSTRAP'
 import base64, json, os, urllib.request
 password = os.environ["INGESTION_PASSWORD"]
@@ -39,6 +40,10 @@ assert password.isalnum()
 query = "DEFINE NAMESPACE IF NOT EXISTS markets; USE NS markets; DEFINE DATABASE IF NOT EXISTS documents; USE DB documents; "
 query += "DEFINE USER OVERWRITE ingestion ON DATABASE PASSWORD '" + password + "' ROLES EDITOR;"
 query += "DEFINE TABLE IF NOT EXISTS document SCHEMALESS; DEFINE TABLE IF NOT EXISTS person SCHEMALESS; DEFINE TABLE IF NOT EXISTS company SCHEMALESS; DEFINE TABLE IF NOT EXISTS mention SCHEMALESS; DEFINE INDEX IF NOT EXISTS mention_document ON mention FIELDS document; DEFINE INDEX IF NOT EXISTS mention_entity ON mention FIELDS entity;"
+project_password = os.environ["PROJECT_PROVISIONER_PASSWORD"]
+assert project_password.isascii() and project_password.isalnum()
+query += "DEFINE NAMESPACE IF NOT EXISTS projects; USE NS projects; "
+query += "DEFINE USER OVERWRITE workflow_provisioner ON NAMESPACE PASSWORD '" + project_password + "' ROLES OWNER;"
 auth = base64.b64encode(("root:" + os.environ["ROOT_PASSWORD"]).encode()).decode()
 req = urllib.request.Request("http://127.0.0.1:8000/sql", data=query.encode(), headers={"Authorization": "Basic " + auth, "Accept": "application/json"})
 with urllib.request.urlopen(req, timeout=60) as response:
@@ -46,4 +51,4 @@ with urllib.request.urlopen(req, timeout=60) as response:
 if any(r["status"] != "OK" for r in results):
     raise RuntimeError("Database bootstrap failed")
 BOOTSTRAP
-unset TOKEN ROOT_PASSWORD INGESTION_PASSWORD
+unset TOKEN ROOT_PASSWORD INGESTION_PASSWORD PROJECT_PROVISIONER_PASSWORD

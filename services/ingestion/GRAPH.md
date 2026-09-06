@@ -95,3 +95,7 @@ PYTHONPATH=services/ingestion python services/ingestion/scripts/verify_graph_exa
 ```
 
 The fixture verifier uses the installed parser for the real MIME/PDF attachment and programmatic CSV/XLSX extraction. It checks both complete terms snapshots against the original CSVs, including the Q2/Q3 fee change. It uses no live credentials and makes no database writes. Set `KG_DB_TESTS=1` when running unit tests against local SurrealDB to verify native traversal, replay and stale-write rejection in temporary tables.
+
+## Project automation
+
+[Project workflows](WORKFLOWS.md) copy selected sources and original bytes into a separate project database, then keep snapshots, checker outputs and review history there. Connector ingestion retains originals in `source_blob`; re-ingest older sources if their bytes are missing. Project runs do not read the main graph after materialization.

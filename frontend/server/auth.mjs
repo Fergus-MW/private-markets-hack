@@ -12,12 +12,14 @@ export function configuration(env = process.env) {
   if (project && !/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(project)) throw new Error('Invalid CONNECTOR_PROJECT');
   const serviceAccount = env.CONNECTOR_SERVICE_ACCOUNT || '';
   if (serviceAccount && !/^[^\s@]+@[^\s@]+\.iam\.gserviceaccount\.com$/.test(serviceAccount)) throw new Error('Invalid CONNECTOR_SERVICE_ACCOUNT');
+  const serviceAccounts = env.CONNECTOR_SERVICE_ACCOUNTS ? env.CONNECTOR_SERVICE_ACCOUNTS.split(',').map(s => s.trim()) : (serviceAccount ? [serviceAccount] : []);
+  if (serviceAccounts.some(account => !/^[^\s@]+@[^\s@]+\.iam\.gserviceaccount\.com$/.test(account))) throw new Error('Invalid CONNECTOR_SERVICE_ACCOUNTS');
   const key = env.SESSION_KEY ? Buffer.from(env.SESSION_KEY, 'hex') : null;
   if (key && (key.length !== 32 || !/^[a-f0-9]{64}$/i.test(env.SESSION_KEY))) throw new Error('SESSION_KEY must be 32 random bytes as hex');
   return {
-    origin: origin.origin, secure: origin.protocol === 'https:', project, serviceAccount, key,
+    origin: origin.origin, secure: origin.protocol === 'https:', project, serviceAccount, serviceAccounts, key,
     clientId: env.GOOGLE_OAUTH_CLIENT_ID, clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
-    enabled: Boolean(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET && key && project && serviceAccount),
+    enabled: Boolean(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET && key && project && serviceAccounts.length),
   };
 }
 
@@ -76,7 +78,7 @@ export function createAuth(config, dependencies = {}) {
       if (error?.response?.status !== 409) throw error;
     }
     await call(`${name}:setIamPolicy`, { policy: { bindings: [
-      { role: 'roles/secretmanager.secretAccessor', members: [`serviceAccount:${config.serviceAccount}`] }] } });
+      { role: 'roles/secretmanager.secretAccessor', members: (config.serviceAccounts || [config.serviceAccount]).map(account => `serviceAccount:${account}`) }] } });
     await call(`${name}:addVersion`, { payload: { data: Buffer.from(JSON.stringify(credentials)).toString('base64') } });
     return name;
   });
