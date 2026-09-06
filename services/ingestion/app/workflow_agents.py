@@ -1,6 +1,7 @@
 """Separate project-local planner/producer/reviewer teams, called by mail tools."""
 import io
 import json
+import logging
 import os
 import re
 import uuid
@@ -24,6 +25,7 @@ from app.workflows import run_workflow
 
 router = APIRouter(prefix="/projects", tags=["workflow agents"])
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+logger = logging.getLogger(__name__)
 
 
 class AgentRequest(Strict):
@@ -73,7 +75,7 @@ class ProjectAnswer(Strict):
 
 
 def model(role, context, schema):
-    model_id = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+    model_id = os.environ.get("GEMINI_MODEL", "gemini-3.1-pro-preview")
     if os.environ.get("GEMINI_API_KEY"):
         endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent"
         headers = {"x-goog-api-key": os.environ["GEMINI_API_KEY"]}
@@ -156,11 +158,24 @@ def draft_workbook(draft):
     return stream.getvalue()
 
 
-def findings(run_id, workflow, items):
+def findings(run_id, workflow, items, kind="finding"):
     # Queryable siblings of the JSON artifacts, so a later run can explain this one
     # without decoding blobs. Artifacts stay the content-addressed source of truth.
-    return [{"key": key(run_id, "finding", index, item), "kind": "finding", "run_id": run_id,
+    # Derived commentary is stored as 'explanation' so it never re-enters evidence.
+    return [{"key": key(run_id, kind, index, item), "kind": kind, "run_id": run_id,
              "workflow": workflow, "recorded_at": now(), **item} for index, item in enumerate(items)]
+
+
+def persist(store, run_id, workflow, status, summary, outputs, records):
+    """Commit a run's report, findings and edges. Shared by the success and failure
+    paths so a run that dies mid-branch still records what it managed to determine."""
+    report = artifact("agent-report.md", summary.encode(), derived_from=list(outputs.values()), role="agent_report")
+    outputs["Report"] = report["key"]
+    store.bundle(nodes=[{"key": run_id, "kind": "run", "workflow": workflow, "status": status,
+                         "summary": summary, "recorded_at": now()}] + records,
+                 artifacts=[report],
+                 links=[link(run_id, "found", item["key"]) for item in records]
+                       + [link(run_id, "produced", item_id) for item_id in outputs.values()])
 
 
 def deliver_draft(run_id, project, workbook):
@@ -209,18 +224,19 @@ def execute(project_id, workflow, request):
                  "started_at": started, "updated_at": started, "phase": "initializing",
                  "trace": [{"at": started, "phase": "initializing", "status": "running",
                             "message": "Workflow agent team claimed the task."}],
-                 "model": os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")}, token)
+                 "model": os.environ.get("GEMINI_MODEL", "gemini-3.1-pro-preview")}, token)
 
     def trace(phase, message, details=None, status="running"):
         store.trace(run_id, token, phase, message, details, status)
 
+    # Bound before the branch so a failure anywhere still has partial work to record.
+    outputs, summary, status, records = {}, "", "completed", []
     try:
         trace("loading_project", "Loading the isolated project workspace.")
         context = {"project": store.manifest()["project"], "instructions": request.instructions}
         if workflow != "explain":
             trace("loading_evidence", "Loading bounded project-local evidence for the agent team.")
             context.update(evidence_context(store))
-        outputs, summary, status, records = {}, "", "completed", []
         sources = list(context.get("sources", {}))
         if workflow != "explain":
             trace("evidence_ready", "Project evidence is ready.", {
@@ -322,20 +338,29 @@ def execute(project_id, workflow, request):
             trace("loading_history", "Loading recorded runs, findings, and deterministic checks.")
             history = [{k: v for k, v in row.items() if k != "claim_token"} for row in all_records(store, "run")]
             notes, checks = store.nodes_of_kind("finding", limit=201), store.nodes_of_kind("check_result", limit=201)
+            prior = sorted(store.nodes_of_kind("explanation", limit=50),
+                           key=lambda row: row.get("recorded_at", ""), reverse=True)[:3]
             context.update(runs=history[-20:], records_truncated=len(notes) > 200 or len(checks) > 200,
                            findings=[{k: row[k] for k in ("run_id", "workflow", "topic", "detail") if k in row} for row in notes[:200]],
-                           checks=[row["result"] for row in checks[:200]])
+                           checks=[row["result"] for row in checks[:200]],
+                           prior_explanations=[{k: row[k] for k in ("recorded_at", "detail") if k in row} for row in prior])
             trace("explaining", "Explanation agent is interpreting recorded workflow history.", {
                 "run_count": len(history), "finding_count": min(len(notes), 200),
-                "check_count": min(len(checks), 200), "records_truncated": context["records_truncated"]})
+                "check_count": min(len(checks), 200), "records_truncated": context["records_truncated"],
+                "prior_explanation_count": len(prior)})
             review = model("You are the run-explanation agent. Explain this project's recorded runs, findings and deterministic "
                            "checker results to the user, and say which run each statement comes from. Use only the supplied "
-                           "records; never re-run work, never approve release, and state plainly when nothing relevant is recorded.",
-                           context, Review)
+                           "records; never re-run work, never approve release, and state plainly when nothing relevant is recorded. "
+                           "prior_explanations are your own earlier replies, not evidence: reuse what the records still support "
+                           "and correct anything they contradict.", context, Review)
             status = "completed" if history else "blocked"
             summary = review.summary if history else "No workflow runs are recorded for this project yet."
             if review.issues:
                 summary += "\n\nOutstanding: " + "; ".join(review.issues)
+            # Stored as 'explanation', never 'finding', so derived commentary is
+            # retrievable as prior context but never read back as project evidence.
+            records += findings(run_id, workflow, [{"topic": "explanation", "detail": summary,
+                                                    "issues": review.issues}], kind="explanation")
         else:
             trace("answering", "Project question-answering agent is reading project-local evidence.")
             answer = model("You are a project question-answering agent. Answer the user's question using only the supplied "
@@ -361,22 +386,25 @@ def execute(project_id, workflow, request):
                 "limitation_count": len(answer.limitations)})
         trace("persisting", "Persisting the final report and queryable run findings.", {
             "output_count": len(outputs), "finding_count": len(records)})
-        report = artifact("agent-report.md", summary.encode(), derived_from=list(outputs.values()), role="agent_report")
-        outputs["Report"] = report["key"]
-        store.bundle(nodes=[{"key": run_id, "kind": "run", "workflow": workflow, "status": status,
-                             "summary": summary, "recorded_at": now()}] + records,
-                     artifacts=[report],
-                     links=[link(run_id, "found", item["key"]) for item in records]
-                           + [link(run_id, "produced", item_id) for item_id in outputs.values()])
+        persist(store, run_id, workflow, status, summary, outputs, records)
         result = {"status": status, "summary": summary, "run_id": run_id, "release_ready": False,
                   "artifacts": output_links(project_id, outputs)}
         trace("finished", f"Workflow finished with status {status}.", {
             "artifact_count": len(result["artifacts"])}, status=status)
     except Exception as error:
+        # The emailed summary stays generic; the detail is recorded for a later explain.
         result = {"status": "failed", "summary": "The workflow agent team could not complete this run. No output is approved. Check the project's inputs and retry.",
                   "run_id": run_id, "release_ready": False}
         trace("failed", "Workflow stopped after an execution error.", {
             "error_type": type(error).__name__, "error": str(error)[:2000]}, status="failed")
+        try:
+            records += findings(run_id, workflow, [{"topic": "failure", "stage": "execution",
+                                                    "detail": f"{type(error).__name__}: {error}"[:2000]}])
+            persist(store, run_id, workflow, "failed", result["summary"], outputs, records)
+            result["artifacts"] = output_links(project_id, outputs)
+        except Exception:
+            # Recording the partial result must never mask the original failure.
+            logger.exception("Could not record partial output for failed run")
     store.finish(run_id, token, result["status"], result)
     return result
 

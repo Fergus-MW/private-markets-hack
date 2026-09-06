@@ -110,7 +110,7 @@ class GraphTests(unittest.TestCase):
 
     def test_gemini_is_only_used_for_unstructured_sources_and_is_cached(self):
         result = Extraction.model_validate({"entities": [{"kind": "company", "name": "Manager LLC", "quote": "Manager LLC"}]})
-        with patch("app.extraction.gemini_extract", return_value=(result, "gemini-3.8-flash")) as model:
+        with patch("app.extraction.gemini_extract", return_value=(result, "gemini-3.1-pro-preview")) as model:
             ingestion = Ingestion(self.graph, use_gemini=True)
             item = Item("drive", "account", "text", "text.txt", b"Manager LLC")
             ingestion.ingest(item)

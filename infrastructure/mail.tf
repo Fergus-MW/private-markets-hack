@@ -15,7 +15,7 @@ variable "agentmail_inbox_id" {
 }
 variable "mail_gemini_model" {
   type    = string
-  default = "gemini-3.5-flash"
+  default = "gemini-3.1-pro-preview"
 }
 variable "mail_existing_connector_accounts" {
   description = "Existing connector job identities that must sign ingestion requests during the mail rollout."

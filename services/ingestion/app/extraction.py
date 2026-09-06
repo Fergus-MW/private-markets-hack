@@ -49,9 +49,9 @@ class Extraction(Strict):
 
 
 def gemini_extract(text):
-    model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
-    if "flash" not in model or not model.startswith("gemini-"):
-        raise ValueError("Graph extraction requires a Gemini Flash model")
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.1-pro-preview")
+    if not model.startswith("gemini-") or not any(family in model for family in ("flash", "pro")):
+        raise ValueError("Graph extraction requires a Gemini Flash or Pro model")
     headers = {"x-goog-api-key": os.environ["GEMINI_API_KEY"]} if os.environ.get("GEMINI_API_KEY") else None
     endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent"
     if headers is None:

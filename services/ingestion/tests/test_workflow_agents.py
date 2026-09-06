@@ -1,7 +1,10 @@
 import io
 import unittest
+from unittest.mock import patch
+from fastapi import HTTPException
 from openpyxl import load_workbook
-from app.workflow_agents import Draft, ProjectAnswer, findings, validate_answer, validate_draft, draft_workbook
+from app.workflow_agents import (Draft, ProjectAnswer, agent_status, findings,
+                                 validate_answer, validate_draft, draft_workbook)
 
 
 class DraftTests(unittest.TestCase):
@@ -64,6 +67,28 @@ class AnswerTests(unittest.TestCase):
         answer.supported = True
         with self.assertRaises(ValueError):
             validate_answer(answer, {"sources": {}})
+
+
+class StatusTests(unittest.TestCase):
+    @patch("app.workflow_agents.local_store")
+    def test_status_reads_the_run_by_durable_mail_job_id(self, local):
+        task_id = "a" * 64
+        local.return_value.agent_run.return_value = {
+            "status": "running", "phase": "reviewing",
+            "trace": [{"phase": "reviewing", "message": "Review in progress"}],
+        }
+        self.assertEqual(agent_status("b" * 64, task_id)["phase"], "reviewing")
+        local.return_value.agent_run.assert_called_once_with(task_id)
+
+    @patch("app.workflow_agents.local_store")
+    def test_status_rejects_invalid_or_unknown_task_ids(self, local):
+        with self.assertRaises(HTTPException) as invalid:
+            agent_status("b" * 64, "not-a-task")
+        self.assertEqual(invalid.exception.status_code, 422)
+        local.return_value.agent_run.return_value = None
+        with self.assertRaises(HTTPException) as missing:
+            agent_status("b" * 64, "a" * 64)
+        self.assertEqual(missing.exception.status_code, 404)
 
 
 if __name__ == "__main__":

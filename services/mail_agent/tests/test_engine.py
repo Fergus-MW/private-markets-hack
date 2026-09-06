@@ -143,6 +143,47 @@ class EngineTests(unittest.TestCase):
                 self.assertIn(link, self.mailer.send.call_args.args[1])
                 self.queue.assert_not_called()
 
+    def test_live_workflow_status_returns_verbose_trace_without_starting_work(self):
+        task_id = "b" * 64
+        self.repo.create("jobs", task_id, {"kind": "workflow", "tenant": self.account["tenant"],
+            "tool_call": self.call, **self.account, "lease_until": 99})
+        self.repo.create("jobs", "status", {"kind": "incoming", "text": "show detailed status",
+            **self.account})
+        self.router.return_value = {"tool_call": {"name": "check_workflow_status", "args": {
+            "project_id": "a" * 64, "job_id": task_id, "verbose": True}}}
+        self.graph.call.return_value = {"status": "running", "phase": "reviewing", "trace": [{
+            "at": "2026-09-06T10:00:00Z", "phase": "reviewing", "status": "running",
+            "message": "Independent reviewer is checking the draft.", "details": {"sheet_count": 2}}]}
+
+        self.engine.process("status")
+
+        text = self.mailer.send.call_args.args[1]
+        self.assertIn("is running", text)
+        self.assertIn("Current phase: reviewing", text)
+        self.assertIn("Verbose execution trace", text)
+        self.assertIn('"sheet_count": 2', text)
+        self.queue.assert_not_called()
+        self.assertTrue(self.graph.call.call_args.args[1].endswith("/agents/jobs/" + task_id))
+
+    def test_workflow_status_cannot_read_another_tenants_task(self):
+        task_id = "b" * 64
+        self.repo.create("jobs", task_id, {"kind": "workflow", "tenant": "u-other",
+            "tool_call": self.call, **{**self.account, "tenant": "u-other"}})
+        self.repo.create("jobs", "status", {"kind": "incoming", "text": "status", **self.account})
+        self.router.return_value = {"tool_call": {"name": "check_workflow_status", "args": {
+            "project_id": "a" * 64, "job_id": task_id, "verbose": False}}}
+
+        self.engine.process("status")
+
+        self.assertIn("couldn't find", self.mailer.send.call_args.args[1])
+        self.graph.call.assert_not_called()
+
+    def test_started_task_id_is_retained_in_thread_context_for_status_followups(self):
+        self.incoming()
+        self.engine.process("incoming")
+        thread = self.repo.rows[key(self.account["tenant"], "incoming")]
+        self.assertEqual(thread["events"][0]["tool_result"]["job_id"], key("incoming", "workflow"))
+
 
 if __name__ == "__main__":
     unittest.main()

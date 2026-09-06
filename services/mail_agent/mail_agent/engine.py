@@ -1,4 +1,7 @@
 """Email conversation coordinator. Workflow execution runs in a separate task."""
+import json
+import time
+
 from .storage import key
 from .ingestion import Ingestion
 
@@ -19,8 +22,38 @@ You can also ask me about work I've already done — 'what did the QC gate find?
 
 Ask me questions about a project, or ask to see its private graph. I can also send your high-level knowledge graph showing connected people, companies, funds and sources.
 
-I'll tell you when I start and send another update when the task finishes, including if it is blocked or fails. Draft outputs and legal terms still need human review. I can also check ingestion progress and retry ingestion if something goes wrong. I will notify you when your files are ingested and your knowledge graph is ready.
+I'll tell you when I start and send another update when the task finishes, including if it is blocked or fails. While a task is running, ask for its status or request verbose logs and tracing for phase-by-phase progress. Draft outputs and legal terms still need human review. I can also check ingestion progress and retry ingestion if something goes wrong. I will notify you when your files are ingested and your knowledge graph is ready.
 """
+
+
+def workflow_status_text(identifier, status, verbose=False):
+    state = status.get("status", "unknown")
+    phase = status.get("phase")
+    text = f"Task {identifier} is {state}."
+    if phase and phase != state:
+        text += f" Current phase: {phase}."
+    output = status.get("output") or status.get("result") or {}
+    if output.get("summary"):
+        text += "\n\n" + output["summary"]
+    artifacts = output.get("artifacts") or {}
+    if artifacts:
+        text += "\n\nArtifacts available after signing in:\n" + "\n".join(
+            f"{name}: {url}" for name, url in artifacts.items())
+    if status.get("trace_unavailable"):
+        text += "\n\nDetailed execution tracing is temporarily unavailable; the durable task state above is still current."
+    if verbose:
+        trace = status.get("trace") or []
+        if trace:
+            lines = []
+            for event in trace:
+                line = f"- {event.get('at', 'unknown time')} | {event.get('phase', 'unknown')} | {event.get('message', '')}"
+                if event.get("details"):
+                    line += " | " + json.dumps(event["details"], sort_keys=True, default=str)
+                lines.append(line)
+            text += "\n\nVerbose execution trace:\n" + "\n".join(lines)
+        else:
+            text += "\n\nNo execution trace has been recorded yet; the task may still be waiting for a worker."
+    return text
 
 
 class Engine:
@@ -77,6 +110,35 @@ class Engine:
                             save(tool_result={"job_id": run_id})
                         send("reply_sent", "I've registered your ingestion request. An active run will be reused to avoid duplicate work. "
                              "I'll send a start update for a new run and another update when it finishes.\n\n" + self.ingestion.status(job))
+                    elif call["name"] == "check_workflow_status":
+                        if "tool_result" not in job:
+                            args = call["args"]
+                            worker = self.repo.get("jobs", args["job_id"])
+                            valid = (worker and worker.get("kind") == "workflow"
+                                     and worker.get("tenant") == job["tenant"]
+                                     and worker.get("tool_call", {}).get("args", {}).get("project_id") == args["project_id"])
+                            if not valid:
+                                result = {"status": "not_found", "phase": "not_found", "trace": [],
+                                          "result": {"summary": "I couldn't find that task in this account and project. Check the Task ID from the start email."}}
+                            else:
+                                result = {"status": "queued", "phase": "queued", "trace": []}
+                                if worker.get("result"):
+                                    result = {"status": worker["result"].get("status", "unknown"),
+                                              "phase": "finished", "result": worker["result"], "trace": []}
+                                try:
+                                    live = self.graph_factory(job).call(
+                                        "GET", f"/projects/{args['project_id']}/agents/jobs/{args['job_id']}")
+                                    result = live
+                                except Exception:
+                                    # The project run is created only after a queued worker begins.
+                                    # Firestore still provides an authoritative queued/terminal state.
+                                    if worker.get("lease_until", 0) > time.time() and not worker.get("result"):
+                                        result.update(status="running", phase="starting")
+                                    if args.get("verbose") and result["status"] != "queued":
+                                        result["trace_unavailable"] = True
+                            save(tool_result=result)
+                        send("reply_sent", workflow_status_text(call["args"]["job_id"], job["tool_result"],
+                                                                 call["args"].get("verbose", False)))
                     elif call["name"] in {"get_project_graph_link", "get_workspace_graph_link"}:
                         label = "project graph" if call["name"] == "get_project_graph_link" else "high-level knowledge graph"
                         send("start_sent", f"I'm finding your private {label} visualization.")
@@ -87,14 +149,19 @@ class Engine:
                     else:
                         workflow_id = key(identifier, "workflow")
                         label = WORKFLOWS[call["name"]][1]
-                        send("start_sent", f"I'm starting the {label} for project {call['args']['project_id']}. I've assigned it to the workflow agent team and will reply again when it finishes.\n\nTask: {workflow_id}")
                         self.repo.create("jobs", workflow_id, {
                             "kind": "workflow", "email": job["email"], "tenant": job["tenant"],
                             "message_id": job["message_id"], "tool_call": call,
                             "thread_id": job.get("thread_id", identifier),
                         })
-                        self.queue(workflow_id)
                         save(tool_result={"job_id": workflow_id, "status": "queued"})
+                        # Make a status follow-up resolvable before the start email
+                        # can reach the recipient. Dispatch still occurs after mail.
+                        self.repo.remember(key(job["tenant"], job.get("thread_id", identifier)), identifier,
+                            {"request": job.get("text"), "decision": job.get("decision"),
+                             "tool_result": job["tool_result"], "result": None})
+                        send("start_sent", f"I'm starting the {label} for project {call['args']['project_id']}. I've assigned it to the workflow agent team and will reply again when it finishes.\n\nTask: {workflow_id}")
+                        self.queue(workflow_id)
                 else:
                     send("reply_sent", decision["reply"])
             elif job["kind"] == "ingestion":
@@ -126,7 +193,8 @@ class Engine:
                 raise ValueError("Unknown job type")
             if job["kind"] in {"incoming", "workflow"}:
                 self.repo.remember(key(job["tenant"], job.get("thread_id", identifier)), identifier,
-                    {"request": job.get("text"), "decision": job.get("decision"), "result": job.get("result")})
+                    {"request": job.get("text"), "decision": job.get("decision"),
+                     "tool_result": job.get("tool_result"), "result": job.get("result")})
             save(done=True)
         finally:
             self.repo.save(identifier, token, lease_until=0)

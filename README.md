@@ -31,10 +31,23 @@ Uploads are limited to 20 MiB, expanded Office/EPUB containers to 100 MiB, and e
 
 For PDFs, the default `pdf_strategy=auto` extracts embedded text and falls back to OCR when no text is found. Choose `ocr_only` for mixed text/scanned PDFs, or `hi_res` for layout-sensitive extraction such as PDF tables. High-resolution parsing downloads its layout model on first use and can take longer. Spreadsheet formulas are not recalculated; extraction uses stored workbook content. Table HTML is preserved when the parser provides it.
 
+## Run locally
+
+```sh
+make up      # build and start the stack, then wait until it answers
+make test    # every suite: ingestion, connectors, mail agent, infrastructure, frontend
+make smoke   # ingestion smoke test against the running stack
+make down    # stop, keeping the database volume
+```
+
+`make` on its own lists every target. `make up` writes a `.env` with a fresh `SESSION_KEY` if one is absent and never overwrites an existing file; add `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `CONNECTOR_PROJECT` and `CONNECTOR_SERVICE_ACCOUNTS` there to enable sign-in. Ports are loopback-only: frontend `18081`, ingestion `18080`, SurrealDB `18000`. `make clean` also deletes the database volume.
+
+The frontend reaches ingestion over plain HTTP locally and skips the Cloud Run IAM token, which has no local equivalent; the signed `X-Graph-Identity` assertion is still required and verified, so `GRAPH_IDENTITY_SECRET` must match on both services. The mail agent is not in the local stack because it needs Firestore and Cloud Tasks, and Cloud Tasks has no emulator: `/api/ingestion/status` answers 503 locally and the progress view says progress is unavailable rather than inventing a run. The first ingestion image build is slow, as it installs the parser stack and models.
+
 ## Agent API
 
 ```sh
-docker compose up --build -d
+make up
 curl -f -F 'file=@report.pdf' http://localhost:18080/documents
 # For a scanned or layout-sensitive PDF:
 curl -f -F 'file=@report.pdf' 'http://localhost:18080/documents?pdf_strategy=ocr_only'

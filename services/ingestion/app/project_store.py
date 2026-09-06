@@ -144,7 +144,7 @@ COMMIT TRANSACTION;
                           {"table": table, "limit": limit, "offset": offset})[0]["result"]
 
     def nodes_of_kind(self, kind, run_id=None, limit=200):
-        if kind not in {"finding", "check_result"}:
+        if kind not in {"finding", "check_result", "explanation"}:
             raise ValueError("Unknown project node kind")
         clause = "AND run_id = $run " if run_id else ""
         rows = self.query(f"SELECT * FROM node WHERE kind = $kind {clause}ORDER BY key LIMIT $limit;",

@@ -1,15 +1,11 @@
-import { GoogleAuth } from 'google-auth-library';
 import { connectorId, unseal } from './auth.mjs';
+import { createRequest } from './upstream.mjs';
 
 // Forward only signed AgentMail webhooks. Their raw bytes are verified by the
 // private mail service; the browser never receives mail or model credentials.
 export function createMail(config, dependencies = {}) {
   const backend = dependencies.backend ?? process.env.MAIL_SERVICE_URL;
-  const cloud = new GoogleAuth();
-  const request = dependencies.request || (async options => {
-    const client = await cloud.getIdTokenClient(backend);
-    return client.request(options);
-  });
+  const request = dependencies.request || createRequest(backend);
   return {
     async signup(email) {
       if (!backend) return;

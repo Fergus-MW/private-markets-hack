@@ -24,7 +24,27 @@ services:
       SURREAL_PROJECT_ADMIN_USER: workflow_provisioner
       SURREAL_PROJECT_ADMIN_PASSWORD: localProjectProvisionerOnly
       SURREAL_PROJECT_SECRET: localProjectCredentialKeyOnly
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
+      GRAPH_IDENTITY_SECRET: ${GRAPH_IDENTITY_SECRET:-localGraphIdentitySigningKeyForDevOnly}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-pro-preview}
     depends_on: [surrealdb]
+  frontend:
+    build: ./frontend
+    ports: ["127.0.0.1:18081:8080"]
+    environment:
+      PUBLIC_ORIGIN: http://localhost:18081
+      INGESTION_URL: http://ingestion:8080
+      # Must match the ingestion service: it verifies this signature, so a
+      # mismatch is a 401 rather than a silent bypass.
+      GRAPH_IDENTITY_SECRET: ${GRAPH_IDENTITY_SECRET:-localGraphIdentitySigningKeyForDevOnly}
+      SESSION_KEY: ${SESSION_KEY:-}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_CONNECTOR_ACCOUNTS: ${GOOGLE_CONNECTOR_ACCOUNTS:-}
+      CONNECTOR_PROJECT: ${CONNECTOR_PROJECT:-}
+      CONNECTOR_SERVICE_ACCOUNTS: ${CONNECTOR_SERVICE_ACCOUNTS:-}
+      # Unset locally: the mail agent needs Firestore and Cloud Tasks, so
+      # /api/ingestion/status answers 503 instead of pretending to have a run.
+      MAIL_SERVICE_URL: ${MAIL_SERVICE_URL:-}
+    depends_on: [ingestion]
 volumes:
   surreal-data:
