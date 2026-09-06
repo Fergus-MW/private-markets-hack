@@ -59,7 +59,8 @@ predicting production behaviour.
 | New service | `compose.yaml`, its `infrastructure/<name>.tf`, a `cloudbuild-<name>.yaml`, and a CI job |
 | New environment variable | the compose service **and** the Cloud Run service in Terraform |
 | New secret | compose (a dev-only literal) **and** Secret Manager with an IAM binding |
-| New database principal, namespace or table | the `surreal-init` service **and** `infrastructure/startup.sh.tftpl` |
+| New table or index in a provisioned database | a migration in `services/ingestion/app/migrations.py` — never a bare `DEFINE` at bootstrap |
+| New database principal or namespace | the `surreal-init` service **and** `infrastructure/startup.sh.tftpl` |
 | New dependency | the service's `requirements.txt` or `package.json`, so the image installs it |
 
 Two real failures this rule exists to prevent, both found by running the stack
@@ -75,6 +76,24 @@ rather than reading it:
 Terraform is the source of truth for production. Never click in the console or
 run an imperative `gcloud` command to fix something; change the `.tf` and apply.
 Check your work with `make tf` (`fmt -check`, `init -backend=false`, `validate`).
+
+## Schema changes go through migrations
+
+Per-user and per-project databases are created on demand, so `DEFINE ... IF NOT
+EXISTS` at provision time only ever reaches databases that did not exist yet.
+`app/migrations.py` keeps an ordered, idempotent list per database kind and
+records each applied step in a `schema_migration` table inside that database;
+both provisioning paths apply whatever is outstanding.
+
+To change the schema, append a migration — never edit an applied one, and never
+add a `DEFINE` somewhere that runs only at creation. Every statement must stay
+`IF NOT EXISTS`: a migration that fails midway is retried from the start.
+`make test-live` covers this, including a database provisioned before a later
+migration existed.
+
+The shared `markets/documents` database is **not** covered: it is bootstrapped by
+`startup.sh.tftpl` with a principal the service does not hold. Changing its
+schema is still a manual, bootstrap-level change.
 
 ## What genuinely cannot run locally
 

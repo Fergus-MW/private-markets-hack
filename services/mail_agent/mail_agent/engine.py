@@ -1,6 +1,7 @@
 """Email conversation coordinator. Workflow execution runs in a separate task."""
 import json
 import time
+from urllib.parse import quote
 
 from .storage import key
 from .ingestion import Ingestion
@@ -61,6 +62,29 @@ class Engine:
         self.repo, self.queue, self.mailer = repo, queue, mailer
         self.graph_factory, self.router = graph_factory, router
         self.ingestion = ingestion or Ingestion(repo, queue)
+
+    def client_mail(self, job):
+        """Ingest one inbound client message into every graph that already knows the
+        sender, refreshing the projects it relates to. Re-running is safe: sources are
+        content-addressed and materialization is idempotent."""
+        raw = self.mailer.raw(job["message_id"])
+        accounts = self.repo.list("accounts")
+        addressed = set(job.get("recipients", []))
+        # Check accounts on the message first; the rest still have to know the sender.
+        accounts.sort(key=lambda account: account.get("email") not in addressed)
+        ingested, seen = [], set()
+        for account in accounts:
+            if not account.get("tenant") or account["tenant"] in seen:
+                continue
+            seen.add(account["tenant"])
+            graph = self.graph_factory(account)
+            if not graph.call("GET", "/mail/senders/" + quote(job["sender"], safe=""))["known"]:
+                continue
+            result = graph.upload("/mail/ingest", {"sender": job["sender"],
+                "external_id": job["message_id"], "subject": job.get("subject", "")}, raw)
+            ingested.append({"tenant": account["tenant"], "source_id": result["source_id"],
+                             "attachments": result["attachments"], "projects": result["projects"]})
+        return {"ingested": ingested, "graphs_checked": len(seen)}
 
     def process(self, identifier):
         job = self.repo.claim(identifier)
@@ -169,6 +193,11 @@ class Engine:
                 if "result" not in job:
                     save(result=self.ingestion.advance(identifier, job, save))
                 send("finish_sent", job["result"]["summary"])
+            elif job["kind"] == "client_mail":
+                # Silent by design: ingestion updates the graphs, it does not reply
+                # to the client and never asks the assistant to interpret the mail.
+                if "result" not in job:
+                    save(result=self.client_mail(job))
             elif job["kind"] == "workflow":
                 if "result" not in job:
                     call = job["tool_call"]

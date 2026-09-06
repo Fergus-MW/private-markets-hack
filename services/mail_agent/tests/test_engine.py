@@ -13,6 +13,9 @@ class Memory:
     def create(self, collection, identifier, value):
         self.rows.setdefault(identifier, copy.deepcopy(value))
 
+    def list(self, collection, limit=50):
+        return copy.deepcopy(getattr(self, "accounts", []))
+
     def get(self, collection, identifier):
         return self.rows.get(identifier)
 
@@ -183,6 +186,68 @@ class EngineTests(unittest.TestCase):
         self.engine.process("incoming")
         thread = self.repo.rows[key(self.account["tenant"], "incoming")]
         self.assertEqual(thread["events"][0]["tool_result"]["job_id"], key("incoming", "workflow"))
+
+
+class ClientMailTests(unittest.TestCase):
+    def setUp(self):
+        self.repo, self.queue, self.mailer, self.router = Memory(), Mock(), Mock(), Mock()
+        self.graphs = {}
+        self.engine = Engine(self.repo, self.queue, self.mailer, self.graph_for, self.router)
+        self.mailer.raw.return_value = b"From: ada@client.com\r\n\r\nbody"
+        self.repo.accounts = [{"email": "one@fund.com", "tenant": "u-1"},
+                              {"email": "two@fund.com", "tenant": "u-2"}]
+        self.job = {"kind": "client_mail", "sender": "ada@client.com", "message_id": "m1",
+                    "thread_id": "t1", "subject": "Q2 statement", "recipients": ["two@fund.com"]}
+
+    def graph_for(self, account):
+        return self.graphs[account["tenant"]]
+
+    def graph(self, known, source_id="s1", projects=()):
+        client = Mock()
+        client.call.return_value = {"known": known}
+        client.upload.return_value = {"source_id": source_id, "attachments": 2, "projects": list(projects)}
+        return client
+
+    def run_job(self):
+        self.repo.create("jobs", "cm", self.job)
+        self.engine.process("cm")
+        return self.repo.rows["cm"]["result"]
+
+    def test_ingests_only_into_graphs_that_know_the_sender(self):
+        self.graphs = {"u-1": self.graph(False), "u-2": self.graph(True, projects=[{"project_id": "p1"}])}
+        result = self.run_job()
+        self.assertEqual([row["tenant"] for row in result["ingested"]], ["u-2"])
+        self.graphs["u-1"].upload.assert_not_called()
+        self.graphs["u-2"].upload.assert_called_once()
+
+    def test_an_unknown_sender_reaches_no_graph_and_sends_no_mail(self):
+        self.graphs = {"u-1": self.graph(False), "u-2": self.graph(False)}
+        result = self.run_job()
+        self.assertEqual(result["ingested"], [])
+        self.assertEqual(result["graphs_checked"], 2)
+        for client in self.graphs.values():
+            client.upload.assert_not_called()
+        self.mailer.send.assert_not_called()
+
+    def test_client_mail_is_never_routed_to_the_assistant(self):
+        self.graphs = {"u-1": self.graph(True), "u-2": self.graph(True)}
+        self.run_job()
+        self.router.assert_not_called()
+
+    def test_addressed_account_is_checked_first(self):
+        order = []
+        self.graphs = {tenant: self.graph(False) for tenant in ("u-1", "u-2")}
+        for tenant, client in self.graphs.items():
+            client.call.side_effect = lambda *a, _t=tenant: (order.append(_t), {"known": False})[1]
+        self.run_job()
+        self.assertEqual(order, ["u-2", "u-1"])
+
+    def test_the_sender_address_is_escaped_into_the_lookup_path(self):
+        self.job["sender"] = "a b/../evil@client.com"
+        self.graphs = {"u-1": self.graph(False), "u-2": self.graph(False)}
+        self.run_job()
+        path = self.graphs["u-2"].call.call_args.args[1]
+        self.assertEqual(path, "/mail/senders/a%20b%2F..%2Fevil%40client.com")
 
 
 if __name__ == "__main__":

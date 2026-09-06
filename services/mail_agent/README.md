@@ -20,6 +20,14 @@ A run that fails partway still records what it determined: findings collected be
 
 Both producing workflows write their outputs twice into the project database: as immutable content-addressed artifacts (bytes in `blob`, metadata in `artifact`) for download and provenance, and as queryable `finding` nodes carrying the rules, sheets, missing inputs and review issues keyed by run. The explain workflow reads the nodes, so later questions never require decoding an artifact blob. Finding keys are content-derived, so a replayed run rewrites the same records.
 
+## Inbound client mail
+
+Mail from an address with no account is queued as a `client_mail` job instead of being ignored. The worker fetches the original RFC822 bytes from AgentMail and, for each registered account, asks that account's graph `GET /mail/senders/{address}`. Only graphs that already know the sender — an exact `Person.emails` match, else a `Company.domains` match on the sender's domain, never a display name — receive the message via `POST /mail/ingest`. Accounts addressed in To/Cc are checked first, but being on the message grants nothing: graph membership is the only gate.
+
+Ingestion posts the raw `.eml`, so the existing pipeline parses the message and ingests every attachment as a child source with `attached_to` edges, upserts the correspondents, and runs entity extraction — updating the high-level graph. The endpoint then refreshes the project-level graph for each related project: a direct `part_of` edge on the message or one of its attachments wins; otherwise the in-progress projects whose fund or management company the message actually mentions. Completed projects are never auto-refreshed, and a project that cannot be materialized is skipped without losing the ingest or the other projects.
+
+Client mail is evidence, never instruction. It is never routed to the assistant, never triggers a workflow, and produces no reply to the client. Spoofing is already excluded upstream: the webhook drops messages labelled `unauthenticated`, `spam` or `blocked`, and auto-replies. Re-running a job is safe — sources are content-addressed and materialization is idempotent.
+
 ## Infrastructure and authorization
 
 `infrastructure/mail.tf` provisions a private Cloud Run service, named Firestore database, Cloud Tasks queue, runtime/task identities, narrow database access, Secret Manager access and Vertex model permissions. The public frontend relays only `/api/agentmail/webhook` to the private mail service, preserving raw bytes and Svix headers. All other mail-service routes require Cloud Run IAM. Signup is called only after the frontend verifies Google OAuth identity.
