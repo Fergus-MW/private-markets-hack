@@ -1,0 +1,4 @@
+listing_name,source_name,corvus_le_id,basis
+Kestrel Dunley 2 Co-Invest LP,Kestrel Dunley II Co-Invest LP,1703,"Roman numeral on the source and LE Mapping, digit on the Entity Listing; one LE Mapping row, one Corvus ID"
+Brinley Co-Invest LP,Kestrel Brinley Co-Invest LP,5323,"Family prefix missing on the Entity Listing; LE Mapping carries only the prefixed name"
+Kestrel JD3 Co-Invest LP,Kestrel JD3 Co-Invest,8231,"Trailing LP present on the Entity Listing and the vehicle name, absent on the source legal entity; one LE Mapping row"

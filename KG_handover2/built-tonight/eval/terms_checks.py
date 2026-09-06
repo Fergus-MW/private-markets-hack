@@ -1,0 +1,160 @@
+"""
+Terms-layer checks: does a fee and commitment schedule agree with the terms register as at a date?
+
+Usage:
+  uv run --with pandas --with openpyxl python3 terms_checks.py --schedule <schedule.xlsx> --as-of 2026-06-30 \
+      [--terms <terms_table.csv>] [--entity-terms <entity_terms.csv>] [--arithmetic-only] \
+      [--runs-dir <dir>] [--out results.md] [--json results.json]
+
+Modes
+  terms mode (default): needs --terms. Checks the schedule against the register in force on --as-of.
+  --arithmetic-only:    no register. Only the checks a schedule can pass on its own (shares, gross fee arithmetic,
+                        roll-forward, totals). This is the "no brain" run: it proves footing cannot see a side letter.
+
+States
+  PASS      the check holds
+  FAIL      the check does not hold (hard)
+  WARN      surfaced, not necessarily wrong (soft)
+  DECISION  not an error: something the register or the administrator must supply before the check can run
+  SKIPPED   not applicable in this mode
+
+Tiers (design rule 1)
+  a  changes a balance, an allocation or the scope
+  b  changes a report line, or must be resolved before upload
+  c  hygiene
+
+Every run writes a run record (design rule: the gate's own audit trail) under --runs-dir, default <demo folder>/runs:
+  runs/<run_id>/run.json and one row per check appended to runs/run_triples.csv in the same triple shape the graph uses.
+Exit code 1 when any check FAILs.
+"""
+import argparse, sys, json, hashlib, datetime as dt
+from pathlib import Path
+import numpy as np, pandas as pd
+
+TIER = {"TC00": "a", "TC01": "b", "TC02": "b", "TC03": "a", "TC04": "a", "TC05": "b", "TC06": "a", "TC07": "b", "TC08": "b", "TC09": "a", "TC10": "a"}
+TIER_NAME = {"a": "changes a balance, an allocation or the scope", "b": "changes a report line or must be resolved before upload", "c": "hygiene"}
+ARITHMETIC = {"TC06", "TC07", "TC08", "TC10"}
+TOL = 0.01
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--schedule", required=True); ap.add_argument("--as-of", required=True); ap.add_argument("--terms"); ap.add_argument("--entity-terms")
+ap.add_argument("--terms-url", help="graph endpoint returning {rows: [...]} in the contract shape; ?as_of=<as-of> is appended (e.g. http://127.0.0.1:18080/graph/funds/<key>/terms)")
+ap.add_argument("--terms-json", help="a saved response from that endpoint (fallback when the service is down)")
+ap.add_argument("--arithmetic-only", action="store_true"); ap.add_argument("--runs-dir"); ap.add_argument("--out"); ap.add_argument("--json")
+a = ap.parse_args()
+if not a.arithmetic_only and not (a.terms or a.terms_url or a.terms_json): ap.error("--terms, --terms-url or --terms-json is required unless --arithmetic-only is set")
+if sum(bool(x) for x in (a.terms, a.terms_url, a.terms_json)) > 1: ap.error("give exactly one of --terms, --terms-url, --terms-json")
+AS_OF = pd.Timestamp(a.as_of); MODE = "arithmetic-only" if a.arithmetic_only else "terms"
+def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest() if p else None
+import io, csv, urllib.request, urllib.parse
+def fetch_terms():
+    """The seam (build plan section 5): terms_as_of(entity, as_of) as rows with exactly the fixture columns. A CSV file, the graph endpoint, or a saved response."""
+    if a.terms: return Path(a.terms).read_text(), str(a.terms), Path(a.terms).name
+    if a.terms_url:
+        url = a.terms_url + ("&" if "?" in a.terms_url else "?") + "as_of=" + urllib.parse.quote(a.as_of)
+        try:
+            with urllib.request.urlopen(url, timeout=20) as r: payload = json.loads(r.read().decode("utf-8"))
+        except Exception as e: sys.exit(f"terms endpoint unreachable: {url} ({e}); fall back to --terms <csv> or --terms-json <saved response>")
+        label = url
+    else:
+        payload = json.loads(Path(a.terms_json).read_text()); label = str(a.terms_json)
+    rows = payload.get("rows") if isinstance(payload, dict) else payload
+    if not rows: sys.exit(f"terms source returned no rows: {label}")
+    cols = list(rows[0].keys()); buf = io.StringIO(); w = csv.DictWriter(buf, fieldnames=cols); w.writeheader(); w.writerows(rows)
+    return buf.getvalue(), label, (label if a.terms_json is None else Path(a.terms_json).name)
+TERMS_TEXT, TERMS_LABEL, TERMS_NAME = fetch_terms() if (a.terms or a.terms_url or a.terms_json) else (None, None, "")
+
+# ---------------------------------------------------------------- inputs
+S = pd.read_excel(a.schedule, sheet_name="Schedule"); cover = pd.read_excel(a.schedule, sheet_name="Cover")
+entity_name = str(cover.loc[cover["Item"] == "Entity", "Value"].iloc[0]) if "Item" in cover.columns and (cover["Item"] == "Entity").any() else "?"
+tot = S[S["investor_id"] == "TOTAL"].iloc[0]; S = S[S["investor_id"] != "TOTAL"].copy()
+T = None; invested = None; entity_id = None
+if TERMS_TEXT is not None:
+    T = pd.read_csv(io.StringIO(TERMS_TEXT)); T["valid_from"] = pd.to_datetime(T["valid_from"]); T["valid_to"] = pd.to_datetime(T["valid_to"])
+    T = T[(T["valid_from"] <= AS_OF) & (T["valid_to"].isna() | (T["valid_to"] >= AS_OF))]
+if a.entity_terms:
+    E = pd.read_csv(a.entity_terms)
+    hit = E[E["term"] == "invested_capital_30jun2026"]; invested = float(hit["value"].iloc[0]) if len(hit) else None
+    hit = E[E["term"] == "entity_id_corvus"]; entity_id = str(hit["value"].iloc[0]) if len(hit) else None
+
+R = []
+def rep(id_, name, bad, detail_cols, amount=None, state_if_bad="FAIL", frame=None):
+    f = S if frame is None else frame; rows = f[bad]
+    R.append(dict(check=id_, tier=TIER.get(id_, "c"), status=state_if_bad if len(rows) else "PASS", name=name, investors=", ".join(rows["investor_name"].astype(str)) if len(rows) else "", n=int(len(rows)),
+                  amount=(float(amount[bad].sum()) if amount is not None and len(rows) else 0.0),
+                  detail="; ".join(f"{r['investor_name']}: " + ", ".join(f"{c}={r[c]}" for c in detail_cols if c in r.index) for _, r in rows.iterrows()) if len(rows) else ""))
+def skip(id_, name): R.append(dict(check=id_, tier=TIER.get(id_, "c"), status="SKIPPED", name=name + " [needs the register]", investors="", n=0, amount=0.0, detail=""))
+
+# ---------------------------------------------------------------- arithmetic checks (both modes)
+share_sched = S["commitment"].astype(float) / S["commitment"].astype(float).sum()
+rep("TC07", "Gross fee = basis amount x rate / 4", ~np.isclose(S["gross_fee"], (S["basis_amount"] * S["rate_applied"] / 4).round(2), atol=TOL), ["gross_fee", "basis_amount", "rate_applied"])
+fee_in = np.where(S["fee_inside_commitment_applied"] == "Y", S["net_fee"], 0.0)
+rf_bad = (~np.isclose(S["fee_called_inside"], fee_in, atol=TOL)) | (~np.isclose(S["called_end"], S["called_start"] + S["capital_calls_q"] + S["fee_called_inside"], atol=TOL)) | (~np.isclose(S["unfunded_end"], S["commitment"] - S["called_end"], atol=TOL))
+rep("TC10", "Roll-forward foots inside the schedule (called_end = start + calls + fee inside; unfunded = commitment - called)", rf_bad, ["called_start", "capital_calls_q", "fee_called_inside", "called_end", "unfunded_end"])
+foot_bad = {c: round(float(tot[c]) - float(S[c].sum()), 2) for c in ["gross_fee", "offset_amount", "net_fee", "called_end", "unfunded_end"] if abs(float(tot[c]) - float(S[c].sum())) > TOL}
+R.append(dict(check="TC08", tier=TIER["TC08"], status="FAIL" if foot_bad else "PASS", name="Totals row foots to the column sums", investors="", n=len(foot_bad), amount=0.0, detail=str(foot_bad)))
+
+# ---------------------------------------------------------------- register checks (terms mode)
+if a.arithmetic_only:
+    rep("TC06", "Schedule allocation share equals commitment share (schedule-internal)", ~np.isclose(S["commitment_share"].astype(float), share_sched, atol=1e-6), ["commitment_share"])
+    for cid, nm in [("TC00", "Every schedule investor has a register row in force"), ("TC01", "Rate applied equals the register"), ("TC02", "Fee basis applied equals the register"), ("TC03", "Fee inside or outside commitment as the register says"), ("TC04", "Fee-exempt investors charged nothing"), ("TC05", "Offset percentage equals the register"), ("TC09", "Net fee equals the fee recomputed from the register")]: skip(cid, nm)
+    J = S.copy()
+else:
+    J = S.merge(T, on="investor_id", how="left", suffixes=("", "_t"))
+    missing = J["mgmt_fee_rate_pa"].isna()
+    rep("TC00", "Every schedule investor has a register row in force on the as-of date", missing, ["investor_id"], state_if_bad="DECISION", frame=J)
+    J = J[~missing].copy(); exempt = J["fee_exempt"] == "Y"
+    J["basis_expected"] = np.where(J["fee_basis"] == "Commitment", J["commitment"].astype(float), (invested * J["commitment_share"].astype(float)) if invested is not None else np.nan)
+    J["gross_expected"] = (J["basis_expected"] * J["mgmt_fee_rate_pa"].astype(float) / 4).round(2); J["offset_expected"] = (J["offsettable_fees_share"] * J["fee_offset_pct"].astype(float).fillna(0)).round(2)
+    J["net_fee_expected"] = np.where(exempt, 0.0, (J["gross_expected"] - J["offset_expected"]).round(2)); J["net_fee_overcharge"] = (J["net_fee"] - J["net_fee_expected"]).round(2)
+    rep("TC01", "Rate applied equals the rate in the terms register", (~exempt) & (~np.isclose(J["rate_applied"].astype(float), J["mgmt_fee_rate_pa"].astype(float))), ["rate_applied", "mgmt_fee_rate_pa", "source_document"], amount=(J["basis_amount"] * (J["rate_applied"] - J["mgmt_fee_rate_pa"]) / 4).abs(), frame=J)
+    rep("TC02", "Fee basis applied equals the basis in the terms register", (~exempt) & (J["fee_basis_applied"] != J["fee_basis"]), ["fee_basis_applied", "fee_basis", "basis_amount", "basis_expected", "source_clause"], amount=((J["basis_amount"] - J["basis_expected"]).abs() * J["mgmt_fee_rate_pa"].astype(float) / 4).fillna(0), frame=J)
+    called_expected = J["called_start"] + J["capital_calls_q"] + np.where(J["fee_inside_commitment"] == "Y", J["net_fee"], 0.0)
+    J["unfunded_expected"] = (J["commitment"] - called_expected).round(2); J["unfunded_overstated_by"] = (J["unfunded_end"] - J["unfunded_expected"]).round(2)
+    rep("TC03", "Fee drawn inside or outside commitment as the terms say, and the unfunded roll-forward follows", (J["fee_inside_commitment_applied"] != J["fee_inside_commitment"]) | (~np.isclose(J["unfunded_end"], J["unfunded_expected"], atol=TOL)), ["fee_inside_commitment_applied", "fee_inside_commitment", "unfunded_end", "unfunded_expected", "unfunded_overstated_by", "source_clause"], amount=J["unfunded_overstated_by"].abs(), frame=J)
+    rep("TC04", "Fee-exempt investors are charged nothing", exempt & (J["gross_fee"].abs() > TOL), ["gross_fee"], amount=J["gross_fee"].abs(), frame=J)
+    rep("TC05", "Offset percentage applied equals the terms register", (~exempt) & (~np.isclose(J["offset_pct_applied"].astype(float), J["fee_offset_pct"].astype(float))), ["offset_pct_applied", "fee_offset_pct", "source_clause"], amount=(J["offsettable_fees_share"] * (J["offset_pct_applied"] - J["fee_offset_pct"])).abs(), frame=J)
+    share_t = J["commitment_t"].astype(float) / J["commitment_t"].astype(float).sum()
+    rep("TC06", "Schedule allocation share equals commitment share in the register", ~np.isclose(J["commitment_share"].astype(float), share_t, atol=1e-6), ["commitment_share"], frame=J)
+    tc09_bad = J["net_fee_expected"].notna() & (J["net_fee_overcharge"].abs() > TOL)
+    rep("TC09", "Net fee equals the fee recomputed from the register (headline overcharge in currency)" + ("" if invested is not None else " [Invested Capital rows skipped: pass --entity-terms]"), tc09_bad, ["net_fee", "net_fee_expected", "net_fee_overcharge"], amount=J["net_fee_overcharge"].abs(), frame=J)
+
+# ---------------------------------------------------------------- report
+order = {"TC00": 0, "TC01": 1, "TC02": 2, "TC03": 3, "TC04": 4, "TC05": 5, "TC06": 6, "TC07": 7, "TC08": 8, "TC09": 9, "TC10": 10}
+df = pd.DataFrame(R).sort_values("check", key=lambda s: s.map(order)).reset_index(drop=True)
+pd.set_option("display.width", 230); pd.set_option("display.max_colwidth", 120)
+summary = df["status"].value_counts().to_dict(); by_tier = df[df["status"].isin(["FAIL", "WARN"])].groupby("tier").size().to_dict()
+hdr = f"Mode: {MODE} | entity: {entity_name} | as-of: {a.as_of} | schedule: {Path(a.schedule).name}" + (f" | register: {TERMS_NAME} ({len(T)} rows, {', '.join(sorted(T['version'].astype(str).unique())) if 'version' in T else 'no version label'})" if T is not None else " | register: none")
+print(hdr); print(df[["check", "tier", "status", "name", "investors", "amount"]].to_string(index=False))
+for _, r in df[df["status"].isin(["FAIL", "DECISION"])].iterrows(): print(f"\n  {r['check']} [{r['status']}, tier {r['tier']}] {r['detail']}")
+print("\nSUMMARY:", summary, "| findings by tier:", by_tier, "| amount at stake (tier a):", round(float(df.loc[(df['status'] == 'FAIL') & (df['tier'] == 'a'), 'amount'].sum()), 2))
+
+# ---------------------------------------------------------------- run record (audit trail)
+run_at = dt.datetime.now().astimezone().replace(microsecond=0); h_sched = sha(a.schedule); h_terms = sha(a.terms) if a.terms else (hashlib.sha256(TERMS_TEXT.encode("utf-8")).hexdigest() if TERMS_TEXT is not None else None); h_ent = sha(a.entity_terms)
+run_id = run_at.strftime("%Y%m%d-%H%M%S") + "-" + hashlib.sha256(f"{h_sched}{h_terms}{a.as_of}{MODE}".encode()).hexdigest()[:6]
+runs_dir = Path(a.runs_dir) if a.runs_dir else Path(__file__).resolve().parent.parent / "runs"; (runs_dir / run_id).mkdir(parents=True, exist_ok=True)
+record = dict(run_id=run_id, run_at=run_at.isoformat(), gate="terms_checks", mode=MODE, entity=entity_name, entity_id=entity_id, as_of=a.as_of, schedule_file=str(a.schedule), schedule_sha256=h_sched,
+              terms_file=TERMS_LABEL, terms_snapshot_sha256=h_terms, terms_rows_in_force=(int(len(T)) if T is not None else 0), entity_terms_sha256=h_ent, summary=summary, findings_by_tier=by_tier, checks=df.to_dict("records"))
+(runs_dir / run_id / "run.json").write_text(json.dumps(record, indent=2, default=str))
+subj = f"run:{run_id}"; trip = [(subj, "rdf:type", "GateRun", run_at.isoformat(), None, Path(a.schedule).name, "", MODE), (subj, "gate", "terms_checks", run_at.isoformat(), None, Path(a.schedule).name, "", MODE),
+        (subj, "entity", entity_name, run_at.isoformat(), None, Path(a.schedule).name, "", MODE), (subj, "as_of", a.as_of, run_at.isoformat(), None, Path(a.schedule).name, "", MODE),
+        (subj, "schedule_sha256", h_sched, run_at.isoformat(), None, Path(a.schedule).name, "", MODE), (subj, "terms_snapshot_sha256", h_terms or "", run_at.isoformat(), None, TERMS_NAME if TERMS_TEXT is not None else "", "", MODE)]
+if entity_id: trip.append((subj, "checks_entity", f"entity:{entity_id}", run_at.isoformat(), None, Path(a.schedule).name, "", MODE))
+for _, r in df.iterrows(): trip.append((subj, f"result:{r['check']}", f"{r['status']}|tier {r['tier']}|{r['investors']}|{r['amount']:.2f}", run_at.isoformat(), None, Path(a.schedule).name, r["check"], MODE))
+tp = runs_dir / "run_triples.csv"; pd.DataFrame(trip, columns=["subject", "predicate", "object", "valid_from", "valid_to", "source_document", "source_clause", "version"]).to_csv(tp, mode="a", header=not tp.exists(), index=False)
+print(f"run record: {runs_dir / run_id / 'run.json'} (+{len(trip)} triples appended to {tp.name})")
+
+# ---------------------------------------------------------------- memo grouped by tier
+if a.json: Path(a.json).write_text(json.dumps(record, indent=2, default=str))
+if a.out:
+    with open(a.out, "w") as f:
+        f.write(f"# Terms checks: {entity_name}, as at {a.as_of}\n\n{hdr}\n\nRun `{run_id}`. Summary: {summary}. Findings by tier: {by_tier}. Amount at stake: {float(df.loc[df['status'] == 'FAIL', 'amount'].sum()):,.2f}.\n\n")
+        for tier in ["a", "b", "c"]:
+            g = df[(df["tier"] == tier) & df["status"].isin(["FAIL", "WARN"])]
+            if len(g): f.write(f"## Tier {tier}: {TIER_NAME[tier]}\n\n"); [f.write(f"- **{r['check']}** {r['status']}: {r['name']}. {r['investors']}. Amount {r['amount']:,.2f}. {r['detail']}\n") for _, r in g.iterrows()]; f.write("\n")
+        g = df[df["status"] == "DECISION"]
+        if len(g): f.write("## Decisions owed (not errors)\n\n"); [f.write(f"- **{r['check']}**: {r['name']}. {r['investors']}. {r['detail']}\n") for _, r in g.iterrows()]; f.write("\n")
+        g = df[df["status"] == "PASS"]; f.write("## Passes\n\n" + "\n".join(f"- {r['check']} (tier {r['tier']}): {r['name']}" for _, r in g.iterrows()) + "\n\n")
+        g = df[df["status"] == "SKIPPED"]
+        if len(g): f.write("## Not run in this mode\n\n" + "\n".join(f"- {r['check']}: {r['name']}" for _, r in g.iterrows()) + "\n")
+sys.exit(1 if "FAIL" in summary else 0)

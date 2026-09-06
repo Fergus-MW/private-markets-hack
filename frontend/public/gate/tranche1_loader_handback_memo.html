@@ -1,0 +1,251 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hand-back memo · Tranche 1 loader</title>
+<style>body{margin:0;background:#faf8f5;color:#1c1a1a;font:15px/1.55 -apple-system,'Helvetica Neue',Arial,sans-serif}main{max-width:980px;margin:0 auto;padding:40px 28px}h1{font-size:26px;letter-spacing:-.5px}h2{font-size:18px;margin-top:34px}table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0}th,td{border:1px solid #ddd6cc;padding:6px 8px;text-align:left;vertical-align:top}th{background:#efeae2}td:nth-child(n+3){font-variant-numeric:tabular-nums}code{font-family:ui-monospace,Menlo,monospace;font-size:12px}a{color:#b45309}</style></head><body><main><p><a href="index.html">← QC gate</a></p><h1>Hand-back review memo: Tranche 1 - Q2 2026 investor-level loader (Claude build).xlsx</h1>
+<p>Generated from the upload template, the source GL (33,902 rows, 79 entities) and the mapping workbook. The source GL is taken as given: this review traces the loader back to the GL, it does not vouch the GL to source documents (section 6). Amounts are gross debits in entity currency and are never summed across currencies. Tier a changes a balance, an allocation or the scope; b changes a report line or must be resolved before upload; c hygiene. A decision owed is not an error.</p>
+<h2>1. Scope card (tier a)</h2>
+<table>
+<thead>
+<tr>
+<th>Bucket</th>
+<th style="text-align: right;">Entities</th>
+<th style="text-align: right;">Rows</th>
+<th>Gross debits by currency</th>
+<th>Where the decision is recorded</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Loaded</td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">18,929</td>
+<td>EUR 3,813,355,979; GBP 4,438,991,051; USD 15,394,565,168</td>
+<td>Entity Listing, Ylookup to complete = Y, 51 of them; see rows below for the rest</td>
+</tr>
+<tr>
+<td>Excluded by a recorded decision</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">12,656</td>
+<td>EUR 1,202,824,395; USD 15,573,533,224</td>
+<td>Entity Listing, Ylookup to complete = N</td>
+</tr>
+<tr>
+<td><strong>Excluded with no decision on record</strong></td>
+<td style="text-align: right;"><strong>6</strong></td>
+<td style="text-align: right;">2,278</td>
+<td>GBP 571,296,257; USD 16,502,673</td>
+<td>Not on the Entity Listing (77 rows) under any name or declared alias; not on the source workbook's Sheet1 flag list</td>
+</tr>
+<tr>
+<td>Loaded but not on the Entity Listing</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">188</td>
+<td>USD 419,188,152</td>
+<td>Kestrel DEK 1 Co-Invest LP: Sheet1 flag = 1.0</td>
+</tr>
+<tr>
+<td>Loaded through a declared alias</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;"></td>
+<td></td>
+<td>entity_aliases.csv: Brinley Co-Invest LP = Kestrel Brinley Co-Invest LP; Kestrel Dunley 2 Co-Invest LP = Kestrel Dunley II Co-Invest LP; Kestrel JD3 Co-Invest LP = Kestrel JD3 Co-Invest</td>
+</tr>
+<tr>
+<td>On the listing as Y, no Q2 activity</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td></td>
+<td>Kelmwold 5 Co-Invest LP, Kestrel Skarsshaw 10 Co-Invest 1 LP, Kestrel VX3 Co-Invest LP: no rows in the source GL</td>
+</tr>
+</tbody>
+</table>
+<p>Entities excluded with no decision on record (each needs a migrate or do-not-migrate decision and an owner):</p>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Currency</th>
+<th style="text-align: right;">Rows</th>
+<th style="text-align: right;">Batches</th>
+<th style="text-align: right;">Investors</th>
+<th style="text-align: right;">Gross debits</th>
+<th>In LE Mapping</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ZIM LP</td>
+<td>GBP</td>
+<td style="text-align: right;">1,860</td>
+<td style="text-align: right;">17</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">571,188,966</td>
+<td>yes, Corvus LE ID 4450</td>
+</tr>
+<tr>
+<td>Kestrel XY3 Co-Invest LP</td>
+<td>USD</td>
+<td style="text-align: right;">110</td>
+<td style="text-align: right;">17</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">11,743,576</td>
+<td>yes, Corvus LE ID 5109</td>
+</tr>
+<tr>
+<td>DJ4 Co-Invest L.P.</td>
+<td>USD</td>
+<td style="text-align: right;">66</td>
+<td style="text-align: right;">17</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">4,653,335</td>
+<td>yes, Corvus LE ID 1705</td>
+</tr>
+<tr>
+<td>Kestrel Ravshaw Co-Invest LP</td>
+<td>USD</td>
+<td style="text-align: right;">156</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">105,762</td>
+<td>yes, Corvus LE ID 5792</td>
+</tr>
+<tr>
+<td>Kestrel Ravthorpe B Co-Invest LP</td>
+<td>GBP</td>
+<td style="text-align: right;">34</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">56,604</td>
+<td>yes, Corvus LE ID 2156</td>
+</tr>
+<tr>
+<td>Kestrel Ravthorpe A Co-Invest LP</td>
+<td>GBP</td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">50,687</td>
+<td>yes, Corvus LE ID 4447</td>
+</tr>
+</tbody>
+</table>
+<h2>2. Tie-out card (tier a): loaded entities against the source GL</h2>
+<ul>
+<li>52 of 52 entities tie on row count (source rows minus zero-amount rows = upload rows); 52 of 52 tie on gross debits and credits to the cent in entity currency.</li>
+<li>EUR: 16 entities, source gross debits 3,813,355,979, upload gross debits 3,813,355,979, difference 0.00.</li>
+<li>GBP: 14 entities, source gross debits 4,438,991,051, upload gross debits 4,438,991,051, difference 0.00.</li>
+<li>USD: 22 entities, source gross debits 15,394,565,168, upload gross debits 15,394,565,168, difference 0.00.</li>
+<li>Zero-amount source rows not carried (39), by entity and batch: Kestrel DEK 1 Co-Invest LP: 38 rows, batch 103582, 109934, 242753, 244752, 258238, 353315, 802321, 804132, 861805, 944847; Kestrelcap Co-Invest 2 LP: 1 rows, batch 108654. Not errors; listed so the count difference is explained.</li>
+<li><strong>Prove before upload (tier a):</strong> 60 journal lines carry the same investor twice with identical amounts (120 upload rows, Kestrel JD3 Co-Invest, batches 110405, 144820, 153210, 203019, 217011, 237191, 344504, 410314, 528180, 530938, 540332, 543144, 627913, 863458). The source GL has the same pairs. Either the entity's movement is double-counted or each pair is two closings without an identifier; tie the entity to its trial balance before it is loaded.</li>
+</ul>
+<h2>3. Open items (what the hand-back lacks)</h2>
+<ul>
+<li><strong>Mapping Gaps sheet, 2 rows with a blank Approval cell (tier b, decision owed):</strong> row 2: 40070 - Interest Income - Bank / Expense: Administration Fees, 11 rows, 4,867.16, proposal 50080 - Administration fees; row 3: 30050 - Partner Transfers / Expense: Legal &amp; Professional Fees, 8 rows, 0.00, proposal none. The upload applies a mapping for these rows anyway.</li>
+<li><strong>CoA Mapping has no row for 22 account and trans-type pairs used by loaded entities (397 source rows; tier b, decision owed):</strong> by account: 30050 - Partner Transfers: 21 pairs, 386 rows; 40070 - Interest Income - Bank: 1 pairs, 11 rows. Largest: 30050 - Partner Transfers / Unrealised Gain/(Loss):  Gain on Investments (68 rows); 30050 - Partner Transfers / Expense: Tax Fees (UK) (50 rows); 30050 - Partner Transfers / Expense: Administration Fees (48 rows); 30050 - Partner Transfers / Expense: Audit Fees (UK) (44 rows); 30050 - Partner Transfers / General Partner Share Paid (42 rows). Whatever the upload did with them is undocumented in the mapping table.</li>
+<li><strong>Investors List: Commitment Amount blank on 470 of 470 rows and Commitment Date blank on 470 (tier b, decision owed):</strong> Task 2 on the Tasks sheet asked for them; the target cannot allocate without them.</li>
+<li><strong>Investors on the Investors List with no upload row (1; tier b):</strong> Kestrel Renbury Limited (Kestrelcap Co-Invest 2 LP, RFX 1204_33442). Their only quarter rows were zero-amount and were dropped; confirm the investor exists in the target independently.</li>
+<li><strong>Investor Mapping: 1,084 rows, 291 exact duplicate rows, 304 repeated (entity, RFX) pairs (tier c).</strong></li>
+<li><strong>Investor Mapping rows flagged CHECK for loaded entities (3; tier c):</strong> Kestrel Selbeck Co-Invest L.P.: RFX 7640_34472 vs target ref 6024_85794; Kestrel Zellshaw Co-Invest LP: RFX 1553_14479 vs target ref 7840_09274; Kestrel Zellshaw Co-Invest LP: RFX 5445_62410 vs target ref 8488_36428. The upload keys on the Corvus ID, so the rows load; the target's external reference should be corrected.</li>
+</ul>
+<h2>4. Decision requests (one line each; owner: the administrator unless stated)</h2>
+<ol>
+<li>Migrate or do not migrate <strong>ZIM LP</strong> (GBP 571,188,966 gross debits, 1,860 rows). Evidence: absent from the Entity Listing (77 rows); present in LE Mapping. Owner: fund manager and administrator.</li>
+<li>Migrate or do not migrate <strong>Kestrel XY3 Co-Invest LP</strong> (USD 11,743,576 gross debits, 110 rows). Evidence: absent from the Entity Listing (77 rows); present in LE Mapping. Owner: fund manager and administrator.</li>
+<li>Migrate or do not migrate <strong>DJ4 Co-Invest L.P.</strong> (USD 4,653,335 gross debits, 66 rows). Evidence: absent from the Entity Listing (77 rows); present in LE Mapping. Owner: fund manager and administrator.</li>
+<li>Migrate or do not migrate <strong>Kestrel Ravshaw Co-Invest LP</strong> (USD 105,762 gross debits, 156 rows). Evidence: absent from the Entity Listing (77 rows); present in LE Mapping. Owner: fund manager and administrator.</li>
+<li>Migrate or do not migrate <strong>Kestrel Ravthorpe B Co-Invest LP</strong> (GBP 56,604 gross debits, 34 rows). Evidence: absent from the Entity Listing (77 rows); present in LE Mapping. Owner: fund manager and administrator.</li>
+<li>Migrate or do not migrate <strong>Kestrel Ravthorpe A Co-Invest LP</strong> (GBP 50,687 gross debits, 52 rows). Evidence: absent from the Entity Listing (77 rows); present in LE Mapping. Owner: fund manager and administrator.</li>
+<li>Confirm <strong>Kestrel DEK 1 Co-Invest LP</strong> is in scope (USD 419,188,152, 188 rows). It is loaded but not on the Entity Listing; the only trace of a decision is Sheet1 flag = 1.0 in the source workbook.</li>
+<li>Approve or replace the mapping for <strong>40070 - Interest Income - Bank / Expense: Administration Fees</strong> (Mapping Gaps row 2, 11 rows, 4,867.16); proposal on file: 50080 - Administration fees.</li>
+<li>Approve or replace the mapping for <strong>30050 - Partner Transfers / Expense: Legal &amp; Professional Fees</strong> (Mapping Gaps row 3, 8 rows, 0.00); proposal on file: none.</li>
+<li>Document the mapping applied to the 22 account and trans-type pairs that have no CoA Mapping row (397 rows), or add the rows to the mapping table.</li>
+<li>Prove the doubled journal lines (60 lines, Kestrel JD3 Co-Invest) to the entity trial balance before upload.</li>
+<li>Supply commitment amounts and dates for the 470 investors on the Investors List (Task 2).</li>
+<li>Correct the Entity Listing name <strong>Brinley Co-Invest LP</strong> to the source name Kestrel Brinley Co-Invest LP (declared alias, entity_aliases.csv).</li>
+<li>Correct the Entity Listing name <strong>Kestrel Dunley 2 Co-Invest LP</strong> to the source name Kestrel Dunley II Co-Invest LP (declared alias, entity_aliases.csv).</li>
+<li>Correct the Entity Listing name <strong>Kestrel JD3 Co-Invest LP</strong> to the source name Kestrel JD3 Co-Invest (declared alias, entity_aliases.csv).</li>
+</ol>
+<h2>5. What is fine (presented as passes)</h2>
+<p>42 of 53 gate checks pass on this file (run <code>20260905-193926-50043c</code>):</p>
+<ul>
+<li>F01 (tier b): 27 target columns in Phase I order.</li>
+<li>F02 (tier b): source Batch ID carried for traceability.</li>
+<li>F03 (tier b): Is Debit carries only Y or N.</li>
+<li>F04 (tier b): Investor Amount (Local) unsigned, non-null.</li>
+<li>F05 (tier b): Investor Amount (LE) unsigned, non-null.</li>
+<li>F06 (tier b): mandatory columns non-null.</li>
+<li>T01 (tier a): loader rows = in-scope source rows with a non-zero amount in either currency.</li>
+<li>T02 (tier a): loader rows with no matching source row (batch/JE/txn/investor/|amounts|/side).</li>
+<li>T03 (tier a): in-scope source rows not in loader (should equal the zero-amount rows only).</li>
+<li>T04 (tier a): per-entity gross debits and credits (entity ccy) = source.</li>
+<li>T05 (tier a): per-entity gross debits and credits (local ccy) = source.</li>
+<li>T06 (tier b): excluded zero-amount rows carry no quantity.</li>
+<li>B01 (tier a): every batch balances in entity ccy.</li>
+<li>B02 (tier a): every journal entry balances in entity ccy.</li>
+<li>B03 (tier a): every batch balances per transaction currency in local ccy.</li>
+<li>B04 (tier b): every investor balances within each batch (investor-level double entry).</li>
+<li>B05 (tier b): one Batch Index per source batch.</li>
+<li>B06 (tier a): a batch never spans two entities.</li>
+<li>C01 (tier a): same-currency rows: local amount = entity amount.</li>
+<li>C03 (tier a): every Legal Entity ID is in LE Mapping.</li>
+<li>R01 (tier b): every Trans Type exists in Corvus CoA.</li>
+<li>R02 (tier b): every Investor Account ID exists in Investor Mapping.</li>
+<li>R03 (tier a): investor account belongs to the row's legal entity.</li>
+<li>R04 (tier b): every Deal ID exists in Deal Mapping.</li>
+<li>R05 (tier b): every Position ID exists in Deal Mapping.</li>
+<li>R06 (tier b): transaction currency = deal currency.</li>
+<li>R07 (tier b): Deal present where Corvus says Required.</li>
+<li>R08 (tier b): Supplier present on mandatory-supplier trans types.</li>
+<li>R09 (tier b): no quantity on trans types where Corvus says N/A.</li>
+<li>R10 (tier b): Bank Account on cash trans types only (Phase I convention).</li>
+<li>R11 (tier b): Bank Account = '<LE ID> - Income|Investment'.</li>
+<li>R12 (tier b): Bank Account LE ID = row's Legal Entity ID.</li>
+<li>R13 (tier b): single investor-level allocation rule.</li>
+<li>R14 (tier b): every Batch Type is in Batch Preference.</li>
+<li>R15 (tier b): one Batch Type per batch.</li>
+<li>D01 (tier a): GL Date inside the quarter.</li>
+<li>A02 (tier c): share of rows posted against the Corvus natural side.</li>
+<li>S01 (tier a): no entity flagged N is loaded.</li>
+<li>S03 (tier a): every Y entity with source activity is loaded.</li>
+<li>K01 (tier a): row count = reference.</li>
+<li>K02 (tier a): row-level key match.</li>
+<li>K03 (tier a): exact column equality on matched rows (Batch Index excluded).</li>
+</ul>
+<h2>6. Basis and boundary (what this review does not cover)</h2>
+<p>This review <strong>traces</strong>: every upload row back to a source GL row, and every code back to its mapping table. It does not <strong>vouch</strong>: no row was agreed to a bank statement, invoice, contract note or valuation report. The pack contains none, and the GL carries no document reference in any of its 43 source columns. An error introduced upstream of the GL export would pass every check in this memo.</p>
+<p>Indicative origin of the quarter's activity, read from the free-text <code>Comments Batch</code> narrative. This is a keyword split of an unvalidated field, offered as context, not as a control, and nothing here is tiered or scored:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Rows</th>
+<th style="text-align: right;">Share</th>
+<th>Narrative pattern</th>
+<th>Evidence that would support it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">11,755</td>
+<td style="text-align: right;">34.7%</td>
+<td>Cashbook (<code>Cashbook DD-MM-YYYY</code>)</td>
+<td>a bank statement</td>
+</tr>
+<tr>
+<td style="text-align: right;">9,783</td>
+<td style="text-align: right;">28.9%</td>
+<td>Manual adjustment (<code>Manual adj. … Accruals</code>)</td>
+<td>an internal fee or accrual calculation</td>
+</tr>
+<tr>
+<td style="text-align: right;">5,438</td>
+<td style="text-align: right;">16.0%</td>
+<td>Valuation (<code>Valuation Removal - 30 Jun 2026</code>)</td>
+<td>a valuation report or GP statement</td>
+</tr>
+<tr>
+<td style="text-align: right;">6,926</td>
+<td style="text-align: right;">20.4%</td>
+<td>Other narrative</td>
+<td>not determinable from the narrative</td>
+</tr>
+</tbody>
+</table>
+<p>So about 45 percent of the quarter is internally generated and has no external counterparty document even in principle. The 35 percent cashbook population is the part a bank-statement workflow could evidence, and is where a vouching step would start if the statements were supplied.</p></main></body></html>

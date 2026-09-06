@@ -1,0 +1,6 @@
+QC gate · q3_2026_fee_and_commitment_schedule_ADMIN_DRAFT.xlsx · Kestrel Lammwick Co-Invest LP · as-of 2026-09-30
+Tier a 1 · Tier b 3 · Tier c 0 · decisions owed 0 · passes 7 of 11
+Amount at stake (tier a): USD 9,296.43
+Top finding: TC09 (tier a) Net fee equals the fee recomputed from the register (headline overcharge in currency) · Trentcombe Fund Investors LLC · USD 9,296.43
+Terms: terms_table_v2.csv · run 20260905-222114-66da61
+Open the page to decide: http://localhost:5173/gate/q3_fee_schedule.html

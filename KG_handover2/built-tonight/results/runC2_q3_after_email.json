@@ -1,0 +1,135 @@
+{
+  "run_id": "20260905-222114-66da61",
+  "run_at": "2026-09-05T22:21:14+01:00",
+  "gate": "terms_checks",
+  "mode": "terms",
+  "entity": "Kestrel Lammwick Co-Invest LP",
+  "entity_id": "2254",
+  "as_of": "2026-09-30",
+  "schedule_file": "stage2_email/q3_2026_fee_and_commitment_schedule_ADMIN_DRAFT.xlsx",
+  "schedule_sha256": "48715e2fdb62dd3253b3fa2919fdb6a2662bbbb2d448cec85837a279a2699651",
+  "terms_file": "stage2_email/terms_table_v2.csv",
+  "terms_snapshot_sha256": "3b4e4ef11fcbd807612d93464e28cc3e5a86e4d4511ba1e6275fc8541cc17534",
+  "terms_rows_in_force": 19,
+  "entity_terms_sha256": "491c04a09a3d4a7931ee9412076af953984ea494e52823efe523afda72b420bc",
+  "summary": {
+    "PASS": 7,
+    "FAIL": 4
+  },
+  "findings_by_tier": {
+    "a": 1,
+    "b": 3
+  },
+  "checks": [
+    {
+      "check": "TC00",
+      "tier": "a",
+      "status": "PASS",
+      "name": "Every schedule investor has a register row in force on the as-of date",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC01",
+      "tier": "b",
+      "status": "FAIL",
+      "name": "Rate applied equals the rate in the terms register",
+      "investors": "Trentcombe Fund Investors LLC",
+      "n": 1,
+      "amount": 3479.000000000003,
+      "detail": "Trentcombe Fund Investors LLC: rate_applied=0.0085, mgmt_fee_rate_pa=0.0075, source_document=Side letter SL-TRENTCOMBE-2026-01 (amended and restated) effective 2026-07-01"
+    },
+    {
+      "check": "TC02",
+      "tier": "b",
+      "status": "FAIL",
+      "name": "Fee basis applied equals the basis in the terms register",
+      "investors": "Trentcombe Fund Investors LLC",
+      "n": 1,
+      "amount": 4348.5,
+      "detail": "Trentcombe Fund Investors LLC: fee_basis_applied=Commitment, fee_basis=Invested Capital, basis_amount=13916000, basis_expected=11596800.0, source_clause=2(a), 2(b), 2(c), 5, 6"
+    },
+    {
+      "check": "TC03",
+      "tier": "a",
+      "status": "PASS",
+      "name": "Fee drawn inside or outside commitment as the terms say, and the unfunded roll-forward follows",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC04",
+      "tier": "a",
+      "status": "PASS",
+      "name": "Fee-exempt investors are charged nothing",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC05",
+      "tier": "b",
+      "status": "FAIL",
+      "name": "Offset percentage applied equals the terms register",
+      "investors": "Trentcombe Fund Investors LLC",
+      "n": 1,
+      "amount": 1468.9279999999997,
+      "detail": "Trentcombe Fund Investors LLC: offset_pct_applied=0.8, fee_offset_pct=1.0, source_clause=2(a), 2(b), 2(c), 5, 6"
+    },
+    {
+      "check": "TC06",
+      "tier": "a",
+      "status": "PASS",
+      "name": "Schedule allocation share equals commitment share in the register",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC07",
+      "tier": "b",
+      "status": "PASS",
+      "name": "Gross fee = basis amount x rate / 4",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC08",
+      "tier": "b",
+      "status": "PASS",
+      "name": "Totals row foots to the column sums",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": "{}"
+    },
+    {
+      "check": "TC09",
+      "tier": "a",
+      "status": "FAIL",
+      "name": "Net fee equals the fee recomputed from the register (headline overcharge in currency)",
+      "investors": "Trentcombe Fund Investors LLC",
+      "n": 1,
+      "amount": 9296.43,
+      "detail": "Trentcombe Fund Investors LLC: net_fee=23695.79, net_fee_expected=14399.36, net_fee_overcharge=9296.43"
+    },
+    {
+      "check": "TC10",
+      "tier": "a",
+      "status": "PASS",
+      "name": "Roll-forward foots inside the schedule (called_end = start + calls + fee inside; unfunded = commitment - called)",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    }
+  ]
+}
