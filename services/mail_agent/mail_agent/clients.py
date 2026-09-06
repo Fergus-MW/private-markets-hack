@@ -61,17 +61,29 @@ class GraphClient:
     def __init__(self, account):
         self.account = account
 
-    def call(self, method, path, body=None):
+    def headers(self, method, path):
         url = os.environ["INGESTION_URL"].rstrip("/")
         now = int(time.time())
         claims = {"tenant": self.account["tenant"], "actor": self.account["email"], "kind": "user",
                   "aud": "knowledge-graph", "iat": now, "exp": now + 60, "method": method, "path": path.split("?", 1)[0]}
         payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).decode().rstrip("=")
         signature = hmac.new(os.environ["GRAPH_IDENTITY_SECRET"].encode(), payload.encode(), hashlib.sha256).hexdigest()
-        response = httpx.request(method, url + path, json=body, timeout=880, headers={
-            "Authorization": "Bearer " + fetch_id_token(Request(), url),
-            "X-Graph-Identity": payload + "." + signature,
-        })
+        return {"Authorization": "Bearer " + fetch_id_token(Request(), url),
+                "X-Graph-Identity": payload + "." + signature}
+
+    def call(self, method, path, body=None):
+        url = os.environ["INGESTION_URL"].rstrip("/")
+        response = httpx.request(method, url + path, json=body, timeout=880,
+                                 headers=self.headers(method, path))
+        response.raise_for_status()
+        return response.json()
+
+    def upload(self, path, envelope, content, filename="message.eml"):
+        """Multipart handoff of retained bytes; the envelope stays a signed field."""
+        url = os.environ["INGESTION_URL"].rstrip("/")
+        response = httpx.post(url + path, timeout=880, headers=self.headers("POST", path),
+                              files={"file": (filename, content, "message/rfc822")},
+                              data={"envelope": json.dumps(envelope)})
         response.raise_for_status()
         return response.json()
 
@@ -190,6 +202,17 @@ def route(message, projects, history=()):
 class Mailer:
     def __init__(self):
         self.client = AgentMail(api_key=os.environ["AGENTMAIL_API_KEY"])
+
+    def raw(self, message_id):
+        """Original RFC822 bytes, so attachments are ingested from the real message
+        rather than a re-encoded copy. The download URL is short-lived and presigned."""
+        location = self.client.inboxes.messages.get_raw(
+            inbox_id=os.environ["AGENTMAIL_INBOX_ID"], message_id=message_id)
+        response = httpx.get(location.download_url, timeout=120, follow_redirects=True)
+        response.raise_for_status()
+        if len(response.content) > 20 * 1024 * 1024:
+            raise ValueError("Inbound message exceeds the 20 MiB ingestion limit")
+        return response.content
 
     def send(self, job, text):
         inbox = os.environ["AGENTMAIL_INBOX_ID"]

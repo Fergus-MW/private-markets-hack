@@ -31,6 +31,8 @@ def provision_database(database):
     password = database_password(database)
     admin.query(f"DEFINE DATABASE IF NOT EXISTS {database}; USE DB {database}; "
                 f"DEFINE USER IF NOT EXISTS workflow ON DATABASE PASSWORD '{password}' ROLES EDITOR;")
+    from app.migrations import apply
+    apply(database)
 
 
 def project_password(project_id):
@@ -61,6 +63,8 @@ class ProjectStore(Store):
                       auth_level=os.environ.get("SURREAL_PROJECT_ADMIN_AUTH_LEVEL", "namespace"))
         admin.query(f"DEFINE DATABASE IF NOT EXISTS {database}; USE DB {database}; "
                     f"DEFINE USER IF NOT EXISTS workflow ON DATABASE PASSWORD '{password}' ROLES EDITOR;")
+        from app.migrations import apply
+        apply(database)
         return cls(project_id)
 
     def get_record(self, table, record_id):

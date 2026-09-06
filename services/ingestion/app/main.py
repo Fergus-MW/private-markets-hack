@@ -11,6 +11,7 @@ from app.parser import SUPPORTED, parse_document
 from app.store import Store
 from app.graph_api import router as graph_router
 from app.project_api import router as project_router
+from app.mail_ingest import router as mail_router
 from app.source_api import router as source_router
 from app.workflow_agents import router as workflow_agent_router
 
@@ -22,6 +23,7 @@ app.add_middleware(IdentityMiddleware)
 app.include_router(graph_router)
 app.include_router(project_router)
 app.include_router(source_router)
+app.include_router(mail_router)
 app.include_router(workflow_agent_router)
 
 

@@ -27,6 +27,11 @@ class Repository:
     def get(self, collection, identifier):
         return self.db.collection(collection).document(identifier).get().to_dict()
 
+    def list(self, collection, limit=50):
+        # ponytail: bounded scan, adequate for this account count. Index by
+        # sender identity if inbound client mail ever outgrows one page.
+        return [doc.to_dict() for doc in self.db.collection(collection).limit(limit).stream()]
+
     def create(self, collection, identifier, value):
         try:
             self.db.collection(collection).document(identifier).create(value)

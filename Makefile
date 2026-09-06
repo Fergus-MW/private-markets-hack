@@ -73,7 +73,7 @@ test-live: $(VENV) ## Live-database tests (needs a running stack: make up)
 	GRAPH_IDENTITY_SECRET=localGraphIdentitySigningKeyForDevOnly \
 	KG_DB_TESTS=1 KG_PROJECT_TESTS=1 \
 	PYTHONPATH=services/ingestion:services/ingestion/tests $(PY) -m unittest \
-	  test_graph.PersistenceTests test_identity $(if $(PROJECT_TERMS_FIXTURES),test_projects,) -v
+	  test_graph.PersistenceTests test_identity test_migrations.LiveMigrationTests $(if $(PROJECT_TERMS_FIXTURES),test_projects,) -v
 
 test-infra: $(VENV) ## Infrastructure bootstrap tests
 	PYTHONPATH=infrastructure/scripts $(PY) -m unittest discover -s infrastructure/tests -v

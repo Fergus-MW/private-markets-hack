@@ -56,6 +56,18 @@ def ingestion_status(request: Signup):
     return Ingestion(repo, enqueue).report({"email": email, "tenant": tenant(email)})
 
 
+def recipients(message):
+    """Addresses the message was sent to. Used only to order candidate accounts,
+    never to grant access: the graph still has to know the sender."""
+    found = []
+    for field in ("to", "cc"):
+        for value in message.get(field) or []:
+            address = parseaddr(value)[1].lower()
+            if address and address not in found:
+                found.append(address)
+    return found[:20]
+
+
 @app.post("/webhook", status_code=202)
 async def webhook(request: Request):
     body = bytearray()
@@ -81,11 +93,21 @@ async def webhook(request: Request):
     if not email or email == os.environ["AGENTMAIL_INBOX_ID"].lower():
         return {"ignored": True}
     account = repository().get("accounts", key(email))
-    if not account:
-        return {"ignored": True}
     message_id = message.get("message_id")
     if not isinstance(message_id, str) or not message_id:
         raise HTTPException(400, "Missing message ID")
+    if not account:
+        # Mail from a client the graph already knows is evidence, not instruction.
+        # It is queued for ingestion only and never reaches the assistant router;
+        # the worker drops it if no graph actually knows the sender.
+        identifier = key("client-mail-v1", message["inbox_id"], message_id)
+        repository().create("jobs", identifier, {
+            "kind": "client_mail", "sender": email, "message_id": message_id,
+            "thread_id": message.get("thread_id") or message_id,
+            "subject": (message.get("subject") or "")[:1000],
+            "recipients": recipients(message)})
+        enqueue(identifier)
+        return {"accepted": True}
     # AgentMail extracted_text excludes quoted thread history. Do not pull old
     # instructions from the full quoted body when stripped text is available.
     text = message.get("extracted_text") or message.get("text") or ""

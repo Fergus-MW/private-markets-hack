@@ -47,11 +47,17 @@ class WebhookTests(unittest.TestCase):
             self.assertEqual(self.post(age=1000).status_code, 401)
         repo.assert_not_called()
 
-    def test_unknown_sender_is_ignored(self):
+    def test_sender_without_an_account_is_queued_for_ingestion_only(self):
         self.repo.get.return_value = None
         with patch("mail_agent.main.repository", return_value=self.repo), patch("mail_agent.main.enqueue") as queue:
             self.assertEqual(self.post().status_code, 202)
-        queue.assert_not_called()
+        queue.assert_called_once()
+        job = self.repo.create.call_args.args[2]
+        # Ingestion only: no assistant routing, and the worker still requires the
+        # sender to exist in a graph before anything is written.
+        self.assertEqual(job["kind"], "client_mail")
+        self.assertNotIn("text", job)
+        self.assertNotIn("tenant", job)
 
     def test_email_without_subject_is_accepted(self):
         self.event["message"]["subject"] = None
