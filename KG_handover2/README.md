@@ -2,7 +2,7 @@
 
 Two folders, one pull request, read time five minutes.
 
-- **`built-tonight/`**: what exists and runs. Start with `BUILT_TONIGHT.md`, then `./VERIFY.sh` (one minute, needs `uv`). Contents: the contract test passing against the partner's own `terms_as_of` code, the gate reading the register from the graph endpoint, and the three surfaces of one run record (page, workbook with cell comments, notification).
+- **`built-tonight/`**: what exists and runs. Start with `BUILT_TONIGHT.md`, then `./VERIFY.sh` (one minute, needs `uv`). Contents: the contract test passing against the partner's own `terms_as_of` code, the gate reading the register from the graph endpoint, and the three surfaces of one run record (page, workbook with cell comments, notification). Added the morning of 6 Sep: the fee terms register as an Excel file rendered from the graph's `terms_as_of` response (`built-tonight/eval/terms_register_xlsx.py`), because the people who will use this read terms in Excel; the graph stays the record.
 - **`for-fergus/`**: `FOR_FERGUS.md` has the finding from the transcripts, the three-surface pattern, three yes-or-no decisions and two build items with acceptance tests. `AGENT_PROMPTS.md` has paste-ready prompts for each.
 - **`frontend/public/gate/`** (in the same PR): the gate result pages served by the existing frontend at `/gate/`, no change to any existing file.
 

@@ -13,4 +13,6 @@ echo "== 3. Three surfaces from the one run record"
 run eval/render_results.py --run verify_out/runC2.json --delta stage2_email/terms_delta_v1_to_v2.json --runs-dir verify_out/runs --graph-url "http://127.0.0.1:18080/graph/sources" --out verify_out/q3_fee_schedule.html
 run eval/gate_to_workbook.py --run verify_out/runC2.json --delta stage2_email/terms_delta_v1_to_v2.json --page-url verify_out/q3_fee_schedule.html --out verify_out/q3_fee_schedule_QC.xlsx
 python3 eval/notify.py --run verify_out/runC2.json --page-url verify_out/q3_fee_schedule.html --out verify_out/notification_q3.txt
-echo "== Expected: equal, equal; B = {'PASS': 10, 'FAIL': 1} with TC03 22,149.55; C2 = {'PASS': 7, 'FAIL': 4} with TC09 9,296.43; three files in verify_out/"
+echo "== 4. The fee terms register: the graph's terms_as_of response as a workbook for the administrator (surface of the graph, not a source)"
+run eval/terms_register_xlsx.py --terms-json graph_export/terms_as_of_2026-09-30.json --previous-json graph_export/terms_as_of_2026-06-30.json --entity-terms stage0_baseline/entity_terms_v1.csv --delta stage2_email/terms_delta_v1_to_v2.json --out verify_out/fee_terms_register_2026-09-30.xlsx
+echo "== Expected: equal, equal; B = {'PASS': 10, 'FAIL': 1} with TC03 22,149.55; C2 = {'PASS': 7, 'FAIL': 4} with TC09 9,296.43; three files in verify_out/; register: 19 investors, 2 on non-default terms, 9 changed cells"
