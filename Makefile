@@ -1,6 +1,6 @@
 # Local development. Cloud deployment stays in infrastructure/ (Terraform).
 .DEFAULT_GOAL := help
-.PHONY: help env up down restart logs ps smoke test test-ingestion test-connectors test-mail test-frontend test-infra tf clean
+.PHONY: help env up down restart logs ps smoke test test-ingestion test-connectors test-mail test-gateway test-frontend test-infra test-live tf clean
 
 VENV := .venv
 PY := $(VENV)/bin/python
@@ -47,7 +47,7 @@ $(VENV): ## Create the local test virtualenv
 	$(or $(PYTHON),python3) -m venv $(VENV)
 	@$(PIP) install -q --upgrade pip
 
-test: test-ingestion test-connectors test-mail test-infra test-frontend ## Run every test suite
+test: test-ingestion test-connectors test-mail test-gateway test-infra test-frontend ## Run every test suite
 
 test-ingestion: $(VENV) ## Ingestion unit tests
 	@$(PIP) install -q $$(grep -E $(TEST_PINS) services/ingestion/requirements.txt)
@@ -60,6 +60,20 @@ test-connectors: $(VENV) ## Connector unit tests
 test-mail: $(VENV) ## Mail agent unit tests
 	@$(PIP) install -q -r services/mail_agent/requirements.txt
 	cd services/mail_agent && PYTHONPATH=.:tests ../../$(PY) -m unittest discover -s tests -v
+
+test-gateway: $(VENV) ## Model gateway unit tests
+	@$(PIP) install -q -r services/model_gateway/requirements.txt
+	cd services/model_gateway && PYTHONPATH=.:tests ../../$(PY) -m unittest discover -s tests -v
+
+test-live: $(VENV) ## Live-database tests (needs a running stack: make up)
+	@$(PIP) install -q $$(grep -E $(TEST_PINS) services/ingestion/requirements.txt)
+	SURREAL_URL=http://127.0.0.1:18000 SURREAL_USER=root \
+	SURREAL_PASSWORD=local-development-only SURREAL_AUTH_LEVEL=root \
+	SURREAL_PROJECT_SECRET=localProjectCredentialKeyOnly \
+	GRAPH_IDENTITY_SECRET=localGraphIdentitySigningKeyForDevOnly \
+	KG_DB_TESTS=1 KG_PROJECT_TESTS=1 \
+	PYTHONPATH=services/ingestion:services/ingestion/tests $(PY) -m unittest \
+	  test_graph.PersistenceTests test_identity $(if $(PROJECT_TERMS_FIXTURES),test_projects,) -v
 
 test-infra: $(VENV) ## Infrastructure bootstrap tests
 	PYTHONPATH=infrastructure/scripts $(PY) -m unittest discover -s infrastructure/tests -v
