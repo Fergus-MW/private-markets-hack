@@ -138,7 +138,9 @@ test('expired and tampered cookies cannot create a session', () => {
   const expired = seal({ expires: Date.now() - 1 }, config.key);
   assert.equal(unseal(expired, config.key), null);
   const valid = seal({ expires: Date.now() + 1000 }, config.key);
-  assert.equal(unseal('X' + valid.slice(1), config.key), null);
+  // The first character encodes random IV bits, so it is 'X' about one run in 64.
+  // Flipping to a character that differs makes this a tampered cookie every time.
+  assert.equal(unseal((valid[0] === 'X' ? 'Y' : 'X') + valid.slice(1), config.key), null);
 });
 test('missing setup shows setup status, not fake authorization', async () => {
   const f = fixture({ config: { ...config, enabled: false } });

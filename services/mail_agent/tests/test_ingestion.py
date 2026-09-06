@@ -49,7 +49,7 @@ class IngestionTests(unittest.TestCase):
         self.engine.process(self.identifier)
         self.engine.process(self.identifier)
         self.assertEqual(self.mailer.send.call_count, 2)
-        self.assertIn("knowledge graph has been generated", self.mailer.send.call_args.args[1])
+        self.assertIn("knowledge graph is built and ready", self.mailer.send.call_args.args[1])
 
     def test_graph_ready_requires_both_providers_and_cloud_execution_success(self):
         self.completed()

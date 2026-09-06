@@ -47,6 +47,9 @@ services:
       GRAPH_IDENTITY_SECRET: ${GRAPH_IDENTITY_SECRET:-localGraphIdentitySigningKeyForDevOnly}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-pro-preview}
       MODEL_GATEWAY_URL: http://model-gateway:8080
+      # Artifact and QC dashboard links the workflow puts in agent mail. Cloud Run
+      # gets the same value from var.frontend_public_origin (infrastructure/main.tf).
+      FRONTEND_PUBLIC_ORIGIN: http://localhost:18081
     depends_on:
       surreal-init:
         condition: service_completed_successfully

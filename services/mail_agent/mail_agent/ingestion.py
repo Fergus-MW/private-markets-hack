@@ -86,7 +86,7 @@ class Ingestion:
         job = self.repo.get("jobs", identifier) if identifier else None
         if not job:
             return {"state": "none", "done": False, "providers": [], "counts": {},
-                    "summary": "No ingestion run has been started yet. Ask me to start ingestion."}
+                    "summary": "No ingestion run has started yet. Ask me to start ingestion whenever you are ready."}
         if job.get("result"):
             result = job["result"]
             recorded = job.get("providers", {})
@@ -111,7 +111,7 @@ class Ingestion:
                 providers.append({"provider": provider, "status": "queued", "counts": {}, "checked": 0})
                 details.append(f"{provider.title()}: queued or starting")
         return {"state": "running", "done": False, "providers": providers, "counts": {},
-                "summary": "Ingestion is still being monitored. " + "; ".join(details) + ". I'll email you when it finishes."}
+                "summary": "Your ingestion is still running. " + "; ".join(details) + ". I will email you as soon as it finishes."}
 
     @property
     def connector(self):
@@ -140,7 +140,7 @@ class Ingestion:
                     raise Busy()
                 elif time.time() - state["launching_at"] > 900:
                     return {"status": "unknown", "retry_safe": False,
-                            "summary": "I couldn't confirm whether the ingestion worker started. I haven't launched a duplicate. The execution needs to be checked before retrying; your knowledge graph is not confirmed ready."}
+                            "summary": "I could not confirm whether the ingestion worker started, so I have not launched a duplicate. Someone will need to check the execution before you retry. Until then I cannot tell you your knowledge graph is ready."}
                 raise Busy()
             if any(not execution.get("completionTime") for execution in executions):
                 raise Busy()
@@ -159,9 +159,9 @@ class Ingestion:
         successful = bool(statuses) and statuses <= {"completed", "empty"}
         if successful and total:
             return {"status": "completed", "retry_safe": True, "counts": counts,
-                    "summary": f"Your files have been ingested and your knowledge graph has been generated. It's ready to go. Drive and Gmail both finished successfully, with {total} ingested or already up-to-date items. You can now ask me to run the QC gate or a first run-through for a project."}
+                    "summary": f"Good news. Your files are ingested and your knowledge graph is built and ready to use. Drive and Gmail both finished, covering {total} items that were ingested or already up to date. You can now ask me to run the QC gate or a first run-through for any project."}
         if successful:
             return {"status": "empty", "retry_safe": True, "counts": counts,
-                    "summary": "The Drive and Gmail scans finished, but no supported files were ingested. Your knowledge graph is not ready yet. Add source files and ask me to retry ingestion."}
+                    "summary": "The Drive and Gmail scans finished, but they found no supported files to ingest, so your knowledge graph is not ready yet. Add some source files and ask me to retry ingestion."}
         return {"status": "failed" if "failed" in statuses else "partial", "retry_safe": True, "counts": counts,
-                "summary": f"Ingestion finished with issues. {total} items were ingested or already up to date, but some files or a connector could not complete. Your knowledge graph is not fully ready. Reply 'retry ingestion' to try again; completed files will be reused. If access has expired, reconnect your Google account first."}
+                "summary": f"Ingestion has finished, but not cleanly. I ingested or confirmed {total} items, and some files or a connector did not complete, so your knowledge graph is not fully ready. Reply 'retry ingestion' and I will pick up where I left off, reusing the files that already succeeded. If your access has expired, please reconnect your Google account first."}

@@ -193,6 +193,20 @@ class ProjectWorkflowTests(unittest.TestCase):
         self.assertNotIn("FAIL", arithmetic["output"]["summary"])
         self.assertFalse(arithmetic["output"]["release_ready"])
         self.assertEqual(original_graph["entities"][self.projects["2026-Q2"]]["status"], "in_progress")
+        # The QC dashboard reads these same recorded runs; nothing is recomputed for the page.
+        page = client.get(route + "/dashboard")
+        self.assertEqual(page.status_code, 200, page.text)
+        gates = page.json()["runs"]
+        self.assertEqual({row["mode"] for row in gates}, {"terms", "arithmetic-only"})
+        checked = next(row for row in gates if row["run_id"] == runs[0]["key"])
+        self.assertEqual(checked["entity"], "Kestrel Lammwick Co-Invest LP")
+        self.assertEqual(checked["terms_rows_in_force"], 19)
+        self.assertEqual(checked["amount_at_stake"], 22149.55)
+        self.assertEqual({c["id"] for c in checked["checks"] if c["status"] == "FAIL"}, {"TC03"})
+        # The "no brain" column the page pairs on: the same draft bytes, without the register.
+        no_brain = next(row for row in gates if row["mode"] == "arithmetic-only")
+        self.assertEqual(no_brain["inputs"]["draft"]["sha256"], checked["inputs"]["draft"]["sha256"])
+        self.assertEqual(no_brain["amount_at_stake"], 0)
         print("\nProject workflow demo: arithmetic=0 failures, Q2=1, Q3=4; DB isolation and offline replay passed")
 
     def test_wrong_period_and_missing_loader_inputs_are_blocked(self):
