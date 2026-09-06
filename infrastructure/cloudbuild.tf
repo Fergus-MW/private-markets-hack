@@ -56,12 +56,11 @@ resource "google_service_account_iam_member" "build_act_as_frontend" {
   member             = "serviceAccount:${google_service_account.build.email}"
 }
 
-# Bootstrap this connection with gcloud and import it (see CLOUD_BUILD.md).
+# Optional second-generation connection; GitHub App mode reuses existing authorization.
 # GitHub authorization is completed using the connection's installation URL.
 # OAuth credentials remain in Secret Manager, not in this repository.
 resource "google_cloudbuildv2_connection" "github" {
-  # Only needed by the trigger; creating it requires the gcloud/GitHub App
-  # bootstrap below, so keep it gated with everything else that uses it.
+  # Only enabled for an authorized regional connection (see CLOUD_BUILD.md).
   count    = var.enable_github_trigger && var.github_connection_mode == "regional" ? 1 : 0
   location = var.region
   name     = "github"
