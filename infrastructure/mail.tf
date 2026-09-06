@@ -259,8 +259,8 @@ resource "google_cloudbuild_trigger" "mail" {
   dynamic "github" {
     for_each = var.github_connection_mode == "github-app" ? [1] : []
     content {
-      owner = "Fergus-MW"
-      name  = "private-markets-hack"
+      owner = var.github_owner
+      name  = var.github_repo
       push { branch = "^main$" }
     }
   }

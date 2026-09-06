@@ -29,6 +29,18 @@ variable "invoker_members" {
   type        = set(string)
   default     = []
 }
+variable "github_owner" {
+  description = "GitHub account that owns the repository the build triggers watch."
+  type        = string
+  default     = "Fergus-MW"
+}
+
+variable "github_repo" {
+  description = "GitHub repository name. Renaming the repository means changing this and applying, or every trigger silently stops firing."
+  type        = string
+  default     = "fund-reporting-qc"
+}
+
 variable "surreal_rpc_body_size" {
   description = "SurrealDB max HTTP RPC body in bytes. Sources are stored base64 encoded, so this caps the largest ingestible file at roughly three quarters of it. The database default is 4 MiB, which rejected files above about 3 MB."
   type        = number
