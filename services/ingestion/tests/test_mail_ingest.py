@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from app.graph import Graph, Source, key
 from app.mail_ingest import related_projects, sender_entity
@@ -77,6 +78,57 @@ class ProjectMatchTests(unittest.TestCase):
         other = self.graph.upsert("fund", "Fund B", self.source)
         self.graph.edge(self.mail, "mentions", other, self.source)
         self.assertEqual(related_projects(self.graph, {self.mail}), [])
+
+
+class RefreshTests(unittest.TestCase):
+    """refresh_projects must copy each project once, not once per source."""
+
+    def setUp(self):
+        from app import mail_ingest
+        self.module = mail_ingest
+        self.graph = Graph()
+        self.source = fixture_source(self.graph)
+        self.mail_a = fixture_source(self.graph, "mail-a")
+        self.mail_b = fixture_source(self.graph, "mail-b")
+        self.fund = self.graph.upsert("fund", "Fund A", self.source)
+        self.company = self.graph.upsert("company", "Manager", self.source)
+        self.project = self.graph.upsert("project", "2026-Q2 loader", self.source, fund_id=self.fund,
+                                         management_company_id=self.company, quarter="2026-Q2",
+                                         workflow_type="loader")
+
+    def test_one_materialize_per_project_with_every_source_that_reached_it(self):
+        for mail in (self.mail_a, self.mail_b):
+            self.graph.edge(mail, "mentions", self.fund, self.source)
+        with patch.object(self.module, "materialize") as materialize:
+            refreshed = self.module.refresh_projects(None, self.graph, [self.mail_a, self.mail_b])
+        materialize.assert_called_once()
+        self.assertEqual(sorted(materialize.call_args.args[2]), sorted([self.mail_a, self.mail_b]))
+        self.assertEqual(refreshed[0]["project_id"], self.project)
+
+    def test_a_direct_link_outranks_a_mention_for_the_same_project(self):
+        self.graph.edge(self.mail_a, "mentions", self.fund, self.source)
+        self.graph.edge(self.mail_b, "part_of", self.project, self.source)
+        with patch.object(self.module, "materialize"):
+            refreshed = self.module.refresh_projects(None, self.graph, [self.mail_a, self.mail_b])
+        self.assertEqual(refreshed[0]["matched_by"], "part_of")
+
+    def test_one_unmaterializable_project_never_loses_the_others(self):
+        other = self.graph.upsert("fund", "Fund B", self.source)
+        second = self.graph.upsert("project", "2026-Q2 terms", self.source, fund_id=other,
+                                   management_company_id=self.company, quarter="2026-Q2",
+                                   workflow_type="terms")
+        self.graph.edge(self.mail_a, "mentions", self.fund, self.source)
+        self.graph.edge(self.mail_a, "mentions", other, self.source)
+        order = sorted([self.project, second])
+        with patch.object(self.module, "materialize",
+                          side_effect=[ValueError("no store"), None]):
+            refreshed = self.module.refresh_projects(None, self.graph, [self.mail_a])
+        self.assertEqual([row["project_id"] for row in refreshed], [order[1]])
+
+    def test_sources_reaching_no_project_refresh_nothing(self):
+        with patch.object(self.module, "materialize") as materialize:
+            self.assertEqual(self.module.refresh_projects(None, self.graph, [self.mail_a]), [])
+        materialize.assert_not_called()
 
 
 if __name__ == "__main__":

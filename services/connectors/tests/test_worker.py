@@ -1,10 +1,13 @@
 import base64
 import io
+import json
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
 from app.worker import (EXPORTS, GOOGLE_NATIVE, Archive, Lease, credentials_info, download, items,
-                        completion_status, make_ingest, object_prefix, object_key, process)
+                        completion_status, graph_identity, make_ingest, object_prefix,
+                        object_key, process, refresh_projects)
 
 
 class MemoryArchive:
@@ -299,6 +302,33 @@ class MultiAccountTests(unittest.TestCase):
                                        "GOOGLE_OAUTH_CREDENTIALS": '{"refresh_token": "mounted"}'})
         self.assertEqual(result, {"refresh_token": "from-secret"})
         self.assertEqual(client.access_secret_version.call_args.kwargs["name"], name)
+
+
+class ProjectRefreshTests(unittest.TestCase):
+    def test_scan_sources_are_carried_into_their_projects_once(self):
+        with patch("google.oauth2.id_token.fetch_id_token", return_value="t"), patch("requests.post") as post, \
+             patch.dict(os.environ, {"GRAPH_IDENTITY_SECRET": "s" * 32}):
+            post.return_value.json.return_value = {"projects": [{"project_id": "p1"}]}
+            refresh_projects("https://ingestion", ["s2", "s1"], "u-0123456789abcdef")
+        self.assertEqual(post.call_count, 1)
+        self.assertEqual(post.call_args.kwargs["json"], {"source_ids": ["s1", "s2"]})
+
+    def test_the_connector_signs_the_refresh_path_it_actually_calls(self):
+        with patch.dict(os.environ, {"GRAPH_IDENTITY_SECRET": "s" * 32}):
+            assertion = graph_identity("u-0123456789abcdef", "/mail/refresh-projects")
+        claims = json.loads(base64.urlsafe_b64decode(assertion.split(".")[0] + "=="))
+        self.assertEqual((claims["method"], claims["path"]), ("POST", "/mail/refresh-projects"))
+
+    def test_a_scan_with_no_new_sources_calls_nothing(self):
+        with patch("requests.post") as post:
+            refresh_projects("https://ingestion", [], "u-0123456789abcdef")
+        post.assert_not_called()
+
+    def test_a_failed_refresh_never_fails_the_scan(self):
+        with patch("google.oauth2.id_token.fetch_id_token", return_value="t"), \
+             patch("requests.post", side_effect=RuntimeError("down")), \
+             patch.dict(os.environ, {"GRAPH_IDENTITY_SECRET": "s" * 32}):
+            refresh_projects("https://ingestion", ["s1"], "u-0123456789abcdef")
 
 
 class CanonicalBridgeTests(unittest.TestCase):

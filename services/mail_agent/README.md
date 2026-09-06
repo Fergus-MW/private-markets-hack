@@ -28,6 +28,10 @@ Ingestion posts the raw `.eml`, so the existing pipeline parses the message and 
 
 Client mail is evidence, never instruction. It is never routed to the assistant, never triggers a workflow, and produces no reply to the client. Spoofing is already excluded upstream: the webhook drops messages labelled `unauthenticated`, `spam` or `blocked`, and auto-replies. Re-running a job is safe — sources are content-addressed and materialization is idempotent.
 
+Mail you send is filed too, when it carries evidence: an attachment, or a forwarded message. Its body becomes the source text alongside the attachments, because the sentence explaining a document is often the substantive half. A bare instruction such as "run QC for Fund A" is routed and answered but never filed, so the graph does not fill with its own noise. Filing never blocks the reply, and the reply says which projects were refreshed.
+
+Client mail arriving through the Gmail connector reaches projects the same way. The connector collects the sources a scan produced and calls `/mail/refresh-projects` once at the end, which materializes each related project a single time with every source that reached it rather than once per source. A refresh failure never fails the scan; the next one retries. Connector identity is restricted to `POST /sources` and `POST /mail/refresh-projects`, both of which stay inside the asserted tenant and copy only data already ingested.
+
 ## Infrastructure and authorization
 
 `infrastructure/mail.tf` provisions a private Cloud Run service, named Firestore database, Cloud Tasks queue, runtime/task identities, narrow database access, Secret Manager access and Vertex model permissions. The public frontend relays only `/api/agentmail/webhook` to the private mail service, preserving raw bytes and Svix headers. All other mail-service routes require Cloud Run IAM. Signup is called only after the frontend verifies Google OAuth identity.

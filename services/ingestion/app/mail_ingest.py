@@ -67,6 +67,38 @@ def related_projects(graph, source_ids):
     return [(project_id, "mentions") for project_id in sorted(scoped)]
 
 
+def owns_graph(address):
+    """The account holder may always file their own mail, even before the graph
+    has learned their address from an ingested document."""
+    from app.identity import current_identity
+    identity = current_identity.get()
+    return bool(identity) and identity.get("actor", "").casefold().strip() == address.casefold().strip()
+
+
+def refresh_projects(store, graph, source_ids):
+    """Materialize each related project once, with every source that reached it,
+    rather than once per source: materialization copies the whole project."""
+    reach = {}
+    for source_id in source_ids:
+        for project_id, matched_by in related_projects(graph, message_sources(graph, source_id)):
+            entry = reach.setdefault(project_id, {"project_id": project_id, "matched_by": matched_by,
+                                                  "name": graph.state.entities[project_id].name,
+                                                  "source_ids": []})
+            entry["source_ids"].append(source_id)
+            if matched_by == "part_of":
+                entry["matched_by"] = "part_of"
+    refreshed = []
+    for entry in sorted(reach.values(), key=lambda item: item["project_id"]):
+        try:
+            materialize(store, entry["project_id"], entry.pop("source_ids"))
+        except (ValueError, KeyError):
+            # One unmaterializable project must not lose the others or the ingest.
+            logger.exception("Could not refresh project %s from inbound mail", entry["project_id"])
+            continue
+        refreshed.append(entry)
+    return refreshed
+
+
 class MailEnvelope(Strict):
     sender: str = Field(min_length=3, max_length=254)
     external_id: str = Field(min_length=1, max_length=512)
@@ -94,12 +126,13 @@ def ingest_mail(file: UploadFile, envelope: str = Form(...)):
         raise HTTPException(422, "Message is empty")
     store, graph = load()
     entity = sender_entity(graph, request.sender)
-    if not entity:
+    if not entity and not owns_graph(request.sender):
         raise HTTPException(403, "Sender is not a known correspondent in this graph")
     from app.identity import tenant
     # Parsed as .eml, so attachments are ingested as child sources in the same call.
     item = Item("agentmail", tenant() or "mail", request.external_id, "message.eml", content, "", "email",
-                {"sender": request.sender, "subject": request.subject, "sender_entity_id": entity.key})
+                {"sender": request.sender, "subject": request.subject,
+                 "sender_entity_id": entity.key if entity else None})
     try:
         source_id = Ingestion(graph, store, use_gemini=True).ingest(item)
     except SourceTooLarge as error:
@@ -108,16 +141,21 @@ def ingest_mail(file: UploadFile, envelope: str = Form(...)):
         raise HTTPException(422, str(error)) from None
     save(store, graph)
     sources = message_sources(graph, source_id)
-    projects = []
-    for project_id, matched_by in related_projects(graph, sources):
-        try:
-            materialize(store, project_id, [source_id])
-        except (ValueError, KeyError):
-            # One unmaterializable project must not lose the others or the ingest.
-            logger.exception("Could not refresh project %s from inbound mail", project_id)
-            continue
-        projects.append({"project_id": project_id, "matched_by": matched_by,
-                         "name": graph.state.entities[project_id].name})
-    return {"source_id": source_id, "sender_entity_id": entity.key,
-            "attachments": len(sources) - 1, "projects": projects,
+    return {"source_id": source_id, "sender_entity_id": entity.key if entity else None,
+            "attachments": len(sources) - 1,
+            "projects": refresh_projects(store, graph, [source_id]),
             "warnings": graph.state.sources[source_id].warnings}
+
+
+class RefreshRequest(Strict):
+    source_ids: list[str] = Field(min_length=1, max_length=500)
+
+
+@router.post("/refresh-projects")
+def refresh(request: RefreshRequest):
+    """Carry newly ingested sources into the projects they relate to. Connectors
+    call this once per scan, so a client email that arrives through Gmail reaches
+    the project graph the same way one sent to the agent does."""
+    store, graph = load()
+    known = [source_id for source_id in request.source_ids if source_id in graph.state.sources]
+    return {"projects": refresh_projects(store, graph, known), "sources": len(known)}
