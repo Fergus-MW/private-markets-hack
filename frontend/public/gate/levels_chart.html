@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Four levels of the same file</title>
+<style>
+.viz-root{color-scheme:light;--surface-1:#fcfcfb;--plane:#f9f9f7;--text-primary:#0b0b0b;--text-secondary:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,0.10);
+  --series-1:#2a78d6;--series-2:#eb6834;--series-3:#1baf7a;--series-4:#eda100}
+@media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])) .viz-root{color-scheme:dark;--surface-1:#1a1a19;--plane:#0d0d0d;--text-primary:#ffffff;--text-secondary:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,0.10);
+  --series-1:#3987e5;--series-2:#d95926;--series-3:#199e70;--series-4:#c98500}}
+:root[data-theme="dark"] .viz-root{color-scheme:dark;--surface-1:#1a1a19;--plane:#0d0d0d;--text-primary:#ffffff;--text-secondary:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,0.10);
+  --series-1:#3987e5;--series-2:#d95926;--series-3:#199e70;--series-4:#c98500}
+body{margin:0;background:var(--plane)} .viz-root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text-primary);background:var(--plane);min-height:100vh;padding:28px 20px 40px}
+.card{max-width:900px;margin:0 auto;background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:22px 24px 18px}
+h1{font-size:20px;font-weight:600;margin:0 0 4px} .sub{color:var(--text-secondary);font-size:14px;margin:0 0 14px;max-width:70ch}
+.legend{display:flex;flex-wrap:wrap;gap:14px 20px;font-size:13px;color:var(--text-secondary);margin:0 0 6px} .legend span{display:inline-flex;align-items:center;gap:7px} .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+svg{width:100%;height:auto;display:block} .grid{stroke:var(--grid);stroke-width:1} .axis{stroke:var(--axis);stroke-width:1} .tick{fill:var(--muted);font-size:12px} .cat{fill:var(--text-primary);font-size:13px;font-weight:600} .cat2{fill:var(--text-secondary);font-size:12px}
+.seg{stroke:var(--surface-1);stroke-width:2;cursor:pointer} .seg:hover{filter:brightness(1.08)} .total{fill:var(--text-primary);font-size:16px;font-weight:600} .inlbl{fill:#fff;font-size:12px;font-weight:600;pointer-events:none}
+.tip{position:fixed;pointer-events:none;background:var(--surface-1);color:var(--text-primary);border:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.15);border-radius:6px;padding:8px 10px;font-size:13px;display:none;max-width:280px;line-height:1.4}
+.tip b{display:block;margin-bottom:2px} .foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12.5px;color:var(--muted)} button{font:inherit;font-size:12.5px;color:var(--text-secondary);background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer}
+table{border-collapse:collapse;width:100%;font-size:13px;margin-top:12px;font-variant-numeric:tabular-nums} th,td{padding:6px 8px;border-bottom:1px solid var(--grid);text-align:right} th:first-child,td:first-child{text-align:left} th{color:var(--text-secondary);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+</style></head><body><div class="viz-root"><div class="card">
+<h1>Four levels of the same file</h1>
+<p class="sub">One migration hand-back, 18,929 rows, scored four ways. The arithmetic was right from the start; what changes is what the reader is told, whether the controls are formulas a client can re-run, and whether the checks know the terms in force. Score = predefined pass/fail tests passed out of 66, no weights (see LEVELS.md). L4 uses the terms register the graph must reproduce; the graph itself is not built yet.</p>
+<div class="legend" id="legend"></div>
+<svg id="chart" viewBox="0 0 880 420" role="img" aria-label="Stacked column chart of tests passed at four levels: 43 of 66, 51 of 66, 61 of 66, 66 of 66"></svg>
+<div class="foot"><span>Hover a segment for its measure. Every segment is a count of tests passed; 66 tests in all, equal weight.</span><button id="tbl">Show table</button></div>
+<div id="table" hidden></div>
+</div></div>
+<div class="tip" id="tip"></div>
+<script>
+const COMP = [{"k": "arith", "name": "EVAL 1 hard checks (39)", "css": "--series-1", "how": "hard checks passed in eval_loader.py"}, {"k": "surf", "name": "EVAL 1 surfacing (11)", "css": "--series-2", "how": "soft and decision items the level's own narrative names"}, {"k": "craft", "name": "EVAL 2 rules (11)", "css": "--series-3", "how": "workpaper rules at their thresholds"}, {"k": "terms", "name": "Terms tests (5)", "css": "--series-4", "how": "injected side-letter errors caught"}];
+const LEVELS = [{"name": "L1", "sub": "Claude alone", "v": {"arith": 39, "surf": 3, "craft": 1, "terms": 0}, "d": {"arith": "39 of 39", "surf": "3 of 11", "craft": "1 of 11", "terms": "0 of 5"}}, {"name": "L2", "sub": "+ EVAL 1", "v": {"arith": 39, "surf": 11, "craft": 1, "terms": 0}, "d": {"arith": "39 of 39", "surf": "11 of 11", "craft": "1 of 11", "terms": "0 of 5"}}, {"name": "L3", "sub": "+ client feedback (EVAL 2)", "v": {"arith": 39, "surf": 11, "craft": 11, "terms": 0}, "d": {"arith": "39 of 39", "surf": "11 of 11", "craft": "11 of 11", "terms": "0 of 5"}}, {"name": "L4", "sub": "+ register standing in for the brain", "v": {"arith": 39, "surf": 11, "craft": 11, "terms": 5}, "d": {"arith": "39 of 39", "surf": "11 of 11", "craft": "11 of 11", "terms": "5 of 5"}}];
+const svg = document.getElementById("chart"), NS = "http://www.w3.org/2000/svg", tip = document.getElementById("tip");
+const TOTAL = 66; const L = 64, R = 20, T = 34, B = 60, W = 880, H = 420, PH = H - T - B, py = v => T + PH - v / TOTAL * PH;
+function el(n, a, txt){ const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; return e; }
+[0, Math.round(TOTAL/4), Math.round(TOTAL/2), Math.round(TOTAL*3/4), TOTAL].forEach(v => { svg.appendChild(el("line", {x1: L, x2: W - R, y1: py(v), y2: py(v), class: v ? "grid" : "axis"})); svg.appendChild(el("text", {x: L - 10, y: py(v) + 4, "text-anchor": "end", class: "tick"}, v)); });
+const slot = (W - L - R) / LEVELS.length, bw = 110;
+LEVELS.forEach((lv, i) => {
+  const cx = L + slot * (i + 0.5), x = cx - bw / 2; let acc = 0; const total = COMP.reduce((s, c) => s + lv.v[c.k], 0);
+  COMP.forEach((c, j) => {
+    const v = lv.v[c.k]; if (!v) return; const y0 = py(acc), y1 = py(acc + v); const isTop = COMP.slice(j + 1).every(cc => !lv.v[cc.k]);
+    const h = y0 - y1, r = isTop ? 4 : 0;
+    const path = `M${x},${y0} L${x},${y1 + r} Q${x},${y1} ${x + r},${y1} L${x + bw - r},${y1} Q${x + bw},${y1} ${x + bw},${y1 + r} L${x + bw},${y0} Z`;
+    const p = el("path", {d: path, class: "seg", style: `fill:var(${c.css})`}); svg.appendChild(p);
+    if (h >= 22) svg.appendChild(el("text", {x: cx, y: (y0 + y1) / 2 + 4, "text-anchor": "middle", class: "inlbl"}, v));
+    const show = e => { tip.style.display = "block"; tip.innerHTML = `<b>${lv.name} ${lv.sub}: ${c.name}</b>${v} tests passed<br><span style="color:var(--text-secondary)">${lv.d[c.k]} · ${c.how}</span>`; tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px"; };
+    p.addEventListener("mousemove", show); p.addEventListener("mouseleave", () => tip.style.display = "none"); acc += v;
+  });
+  svg.appendChild(el("text", {x: cx, y: py(total) - 10, "text-anchor": "middle", class: "total"}, Math.round(total) + " of " + TOTAL + " · " + Math.round(total / TOTAL * 100) + "%"));
+  svg.appendChild(el("text", {x: cx, y: H - B + 22, "text-anchor": "middle", class: "cat"}, lv.name)); svg.appendChild(el("text", {x: cx, y: H - B + 40, "text-anchor": "middle", class: "cat2"}, lv.sub));
+});
+document.getElementById("legend").innerHTML = COMP.map(c => `<span><i class="sw" style="background:var(${c.css})"></i>${c.name}</span>`).join("");
+const tb = document.getElementById("table"); tb.innerHTML = "<table><thead><tr><th>Component</th>" + LEVELS.map(l => `<th>${l.name} ${l.sub}</th>`).join("") + "</tr></thead><tbody>" + COMP.map(c => `<tr><td>${c.name}</td>` + LEVELS.map(l => `<td>${l.v[c.k] % 1 ? l.v[c.k].toFixed(1) : l.v[c.k]}<span style="color:var(--muted)"> · ${l.d[c.k]}</span></td>`).join("") + "</tr>").join("") + `<tr><td><b>Total</b></td>${LEVELS.map(l => `<td><b>${Math.round(COMP.reduce((s, c) => s + l.v[c.k], 0))}</b></td>`).join("")}</tr></tbody></table>`;
+document.getElementById("tbl").addEventListener("click", e => { tb.hidden = !tb.hidden; e.target.textContent = tb.hidden ? "Show table" : "Hide table"; });
+</script></body></html>
