@@ -192,21 +192,34 @@ resource "google_service_account_iam_member" "connector_build" {
 }
 
 resource "google_cloudbuild_trigger" "connectors" {
-  count           = var.enable_github_trigger && length(local.connector_jobs) > 0 ? 1 : 0
+  count           = var.enable_github_trigger && length(local.connector_release_jobs) > 0 ? 1 : 0
   name            = "connectors-main"
-  location        = var.region
+  location        = local.github_trigger_location
   service_account = google_service_account.build.id
   filename        = "cloudbuild-connectors.yaml"
   included_files  = ["services/connectors/**", "cloudbuild-connectors.yaml"]
   substitutions = {
     _REGION = var.region
-    _JOBS   = join(" ", [for key in sort(keys(local.connector_jobs)) : "connector-${key}"])
+    _JOBS   = join(" ", sort(tolist(local.connector_release_jobs)))
+    _DEPLOY = "true"
   }
-  repository_event_config {
-    repository = google_cloudbuildv2_repository.main[0].id
-    push { branch = "^main$" }
+  dynamic "github" {
+    for_each = var.github_connection_mode == "github-app" ? [1] : []
+    content {
+      owner = "Fergus-MW"
+      name  = "private-markets-hack"
+      push { branch = "^main$" }
+    }
+  }
+  dynamic "repository_event_config" {
+    for_each = var.github_connection_mode == "regional" ? [1] : []
+    content {
+      repository = google_cloudbuildv2_repository.main[0].id
+      push { branch = "^main$" }
+    }
   }
   depends_on = [google_cloud_run_v2_job_iam_member.connector_build, google_service_account_iam_member.connector_build,
+    google_cloud_run_v2_job_iam_member.existing_connector_build, google_service_account_iam_member.existing_connector_build,
   google_project_iam_member.build_logs, google_artifact_registry_repository_iam_member.build_push]
 }
 
@@ -216,4 +229,34 @@ output "google_connectors" {
     secret = google_secret_manager_secret.connector[key].secret_id
     job    = try(google_cloud_run_v2_job.connector[key].name, null)
   } }
+}
+
+variable "existing_connector_release_jobs" {
+  description = "Existing jobs outside this Terraform runtime configuration: job name => runtime service-account email. Only release permissions and targets are managed."
+  type        = map(string)
+  default     = {}
+  validation {
+    condition     = alltrue([for name, account in var.existing_connector_release_jobs : can(regex("^connector-[a-z0-9][a-z0-9-]*$", name)) && endswith(account, ".iam.gserviceaccount.com")])
+    error_message = "Existing connector release jobs need a connector-* name and runtime service-account email."
+  }
+}
+
+locals {
+  connector_release_jobs = setunion(toset([for key in keys(local.connector_jobs) : "connector-${key}"]), toset(keys(var.existing_connector_release_jobs)))
+}
+
+resource "google_cloud_run_v2_job_iam_member" "existing_connector_build" {
+  for_each = var.existing_connector_release_jobs
+  project  = google_project.main.project_id
+  location = var.region
+  name     = each.key
+  role     = "roles/run.developer"
+  member   = "serviceAccount:${google_service_account.build.email}"
+}
+
+resource "google_service_account_iam_member" "existing_connector_build" {
+  for_each           = var.existing_connector_release_jobs
+  service_account_id = "projects/${var.project_id}/serviceAccounts/${each.value}"
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.build.email}"
 }

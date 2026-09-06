@@ -226,8 +226,9 @@ resource "google_service_account_iam_member" "mail_build" {
   member             = "serviceAccount:${google_service_account.build.email}"
 }
 resource "google_cloud_run_v2_service_iam_member" "mail_build" {
+  # Release IAM targets a provisioned service; it must not pull runtime drift into a CD apply.
   count    = var.mail_enabled && var.mail_image != null ? 1 : 0
-  name     = google_cloud_run_v2_service.mail[0].name
+  name     = "agent-mail"
   location = var.region
   role     = "roles/run.developer"
   member   = "serviceAccount:${google_service_account.build.email}"
@@ -270,4 +271,35 @@ resource "google_storage_bucket_iam_member" "mail_ingestion_status" {
     title      = "Ingestion progress objects only"
     expression = "resource.name.startsWith('projects/_/buckets/${var.mail_ingestion_status_bucket}/objects/ingestion-status/')"
   }
+}
+
+resource "google_cloudbuild_trigger" "mail" {
+  count           = var.enable_github_trigger && var.mail_enabled && var.mail_image != null ? 1 : 0
+  name            = "mail-main"
+  location        = local.github_trigger_location
+  service_account = google_service_account.build.id
+  filename        = "cloudbuild-mail.yaml"
+  included_files  = ["services/mail_agent/**", "cloudbuild-mail.yaml"]
+  substitutions = {
+    _REGION = var.region
+    _DEPLOY = "true"
+  }
+  dynamic "github" {
+    for_each = var.github_connection_mode == "github-app" ? [1] : []
+    content {
+      owner = "Fergus-MW"
+      name  = "private-markets-hack"
+      push { branch = "^main$" }
+    }
+  }
+  dynamic "repository_event_config" {
+    for_each = var.github_connection_mode == "regional" ? [1] : []
+    content {
+      repository = google_cloudbuildv2_repository.main[0].id
+      push { branch = "^main$" }
+    }
+  }
+  depends_on = [google_cloud_run_v2_service_iam_member.mail_build,
+    google_service_account_iam_member.mail_build,
+  google_project_iam_member.build_logs, google_artifact_registry_repository_iam_member.build_push]
 }

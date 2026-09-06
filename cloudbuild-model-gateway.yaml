@@ -8,8 +8,24 @@ steps:
   - id: push
     name: gcr.io/cloud-builders/docker
     args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/model-gateway:$BUILD_ID']
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        case "${_DEPLOY}" in
+          true) ;;
+          false) echo "Build-only run: deployment explicitly disabled."; exit 0 ;;
+          *) echo "_DEPLOY must be true or false" >&2; exit 1 ;;
+        esac
+        IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/services/model-gateway"
+        DIGEST=$$(gcloud artifacts docker images describe "$$IMAGE:$BUILD_ID" --format='value(image_summary.digest)')
+        test -n "$$DIGEST"
+        gcloud run services update model-gateway --project="$PROJECT_ID" --region="${_REGION}" --image="$$IMAGE@$$DIGEST" --quiet
 substitutions:
   _REGION: europe-west2
+  _DEPLOY: 'true'
 options:
   logging: CLOUD_LOGGING_ONLY
 timeout: 900s
