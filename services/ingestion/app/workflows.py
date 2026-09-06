@@ -140,7 +140,8 @@ def check_coverage(store, gate, mode, inputs, ratifications):
             raise CoverageError("Missing project-local artifact for " + role) from None
     # Original workbooks are mandatory. Text approximations cannot drive a checker.
     for role in required & {"draft", "source_gl", "mappings"}:
-        if items[role][0]["role"] != "original":
+        allowed = {"original", "draft_deliverable"} if role == "draft" else {"original"}
+        if items[role][0]["role"] not in allowed:
             raise CoverageError(role + " requires retained original workbook bytes; re-ingest the source")
     if gate == "terms" and mode == "terms":
         for role in ("terms", "entity_terms"):

@@ -8,6 +8,26 @@ services:
       SURREAL_PASS: local-development-only
     ports: ["127.0.0.1:18000:8000"]
     volumes: ["surreal-data:/data"]
+  # The cloud VM bootstraps these principals in startup.sh.tftpl; locally the
+  # database starts empty, so the per-user graph path 500s without them.
+  surreal-init:
+    image: curlimages/curl:8.11.1
+    depends_on: [surrealdb]
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        until curl -fsS http://surrealdb:8000/health >/dev/null; do sleep 1; done
+        curl -fsS -u root:local-development-only -H 'Accept: application/json' -H 'Surreal-NS: projects' \
+          --data-raw "DEFINE NAMESPACE IF NOT EXISTS projects; USE NS projects; DEFINE USER OVERWRITE workflow_provisioner ON NAMESPACE PASSWORD 'localProjectProvisionerOnly' ROLES OWNER;" \
+          http://surrealdb:8000/sql
+        echo "surrealdb bootstrapped"
+  model-gateway:
+    build: ./services/model_gateway
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-pro-preview}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
   ingestion:
     build: ./services/ingestion
     ports: ["127.0.0.1:18080:8080"]
@@ -24,7 +44,32 @@ services:
       SURREAL_PROJECT_ADMIN_USER: workflow_provisioner
       SURREAL_PROJECT_ADMIN_PASSWORD: localProjectProvisionerOnly
       SURREAL_PROJECT_SECRET: localProjectCredentialKeyOnly
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
-    depends_on: [surrealdb]
+      GRAPH_IDENTITY_SECRET: ${GRAPH_IDENTITY_SECRET:-localGraphIdentitySigningKeyForDevOnly}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-pro-preview}
+      MODEL_GATEWAY_URL: http://model-gateway:8080
+    depends_on:
+      surreal-init:
+        condition: service_completed_successfully
+      model-gateway:
+        condition: service_started
+  frontend:
+    build: ./frontend
+    ports: ["127.0.0.1:18081:8080"]
+    environment:
+      PUBLIC_ORIGIN: http://localhost:18081
+      INGESTION_URL: http://ingestion:8080
+      # Must match the ingestion service: it verifies this signature, so a
+      # mismatch is a 401 rather than a silent bypass.
+      GRAPH_IDENTITY_SECRET: ${GRAPH_IDENTITY_SECRET:-localGraphIdentitySigningKeyForDevOnly}
+      SESSION_KEY: ${SESSION_KEY:-}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_CONNECTOR_ACCOUNTS: ${GOOGLE_CONNECTOR_ACCOUNTS:-}
+      CONNECTOR_PROJECT: ${CONNECTOR_PROJECT:-}
+      CONNECTOR_SERVICE_ACCOUNTS: ${CONNECTOR_SERVICE_ACCOUNTS:-}
+      # Unset locally: the mail agent needs Firestore and Cloud Tasks, so
+      # /api/ingestion/status answers 503 instead of pretending to have a run.
+      MAIL_SERVICE_URL: ${MAIL_SERVICE_URL:-}
+    depends_on: [ingestion]
 volumes:
   surreal-data:

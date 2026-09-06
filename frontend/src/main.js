@@ -1,6 +1,11 @@
 import './style.css';
 import { createGraph } from './graph.js';
 
+if (/^\/graphs(?:\/|$)/.test(location.pathname)) {
+  const { mountGraphs } = await import('./graphs.js');
+  await mountGraphs();
+} else {
+
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 let graph;
 try { graph = createGraph(document.querySelector('#graph')); }
@@ -30,8 +35,20 @@ try {
     const session = await response.json();
     configured = session.configured !== false;
     if (session.connected && (!result || result === 'success')) {
-      document.querySelector('#button-label').textContent = 'Google connected';
-      button.setAttribute('aria-label', 'Reconnect your Google account');
+      // Just signed up, or still ingesting: watch the real run instead of a
+      // dead "connected" button. A finished run keeps the original page.
+      const { mountIngesting } = await import('./ingesting.js');
+      const shell = document.querySelector('.shell');
+      if (result === 'success') { await mountIngesting(shell); }
+      else {
+        const report = await fetch('/api/ingestion/status', { credentials: 'same-origin' })
+          .then(response => (response.ok ? response.json() : null)).catch(() => null);
+        if (report && !report.done) await mountIngesting(shell);
+        else {
+          document.querySelector('#button-label').textContent = 'Google connected';
+          button.setAttribute('aria-label', 'Reconnect your Google account');
+        }
+      }
     }
   }
 } catch { /* The connect endpoint provides a recoverable error if unavailable. */ }
@@ -45,3 +62,4 @@ button.addEventListener('click', (event) => {
   document.querySelector('#button-label').textContent = 'Connecting…';
 });
 window.addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
+}

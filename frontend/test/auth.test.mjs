@@ -21,7 +21,7 @@ function fixture(options = {}) {
   const handle = createAuth(options.config || config, { oauth, connect: async (id, credentials) => {
     if (options.failSave) throw new Error('storage unavailable');
     saved.push({ id, credentials });
-  } });
+  }, onSignup: options.onSignup });
   async function request(path, cookie = '') {
     const response = { writeHead(status, headers) { this.status = status; this.headers = headers; }, end(body) { this.body = body; } };
     await handle({ headers: { cookie } }, response, new URL(path, config.origin));
@@ -60,6 +60,23 @@ test('successful callback saves compatible credentials before reporting success'
     connector: connectorId('person@example.com'), configured: true });
   assert.ok(!session.body.includes('refresh'));
 });
+
+test('verified signup queues welcome after saving the connector', async () => {
+  const emails = [];
+  const f = fixture({ onSignup: async email => { assert.equal(f.saved.length, 1); emails.push(email); } });
+  const { cookie, state } = await f.start();
+  const result = await f.request(`/api/auth/google/callback?code=code&state=${state}`, cookie);
+  assert.equal(result.headers.Location, '/?connection=success');
+  assert.deepEqual(emails, ['person@example.com']);
+});
+
+test('unverified account never queues a welcome', async () => {
+  let called = false;
+  const f = fixture({ verified: false, onSignup: async () => { called = true; } });
+  const { cookie, state } = await f.start();
+  await f.request(`/api/auth/google/callback?code=code&state=${state}`, cookie);
+  assert.equal(called, false);
+});
 test('invalid state never exchanges a code or writes credentials', async () => {
   const f = fixture();
   const { cookie } = await f.start();
@@ -74,6 +91,12 @@ test('cancellation returns a recoverable result', async () => {
   const result = await f.request(`/api/auth/google/callback?error=access_denied&state=${state}`, cookie);
   assert.equal(result.headers.Location, '/?connection=denied');
   assert.equal(f.exchangeCount, 0);
+});
+test('declining Drive write still connects; only the read scopes are required', async () => {
+  const f = fixture({ scopes: SCOPES.filter(scope => !scope.endsWith('drive.file')) });
+  const { cookie, state } = await f.start();
+  const result = await f.request(`/api/auth/google/callback?code=code&state=${state}`, cookie);
+  assert.equal(result.headers.Location, '/?connection=success');
 });
 for (const [name, options, reason] of [
   ['partial consent', { scopes: [SCOPES[2]] }, 'permissions'],

@@ -1,0 +1,30 @@
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/agent-mail:$BUILD_ID', 'services/mail_agent']
+  - id: tests
+    name: gcr.io/cloud-builders/docker
+    args: ['run', '--rm', '--entrypoint=python', '-v', '/workspace/services/mail_agent/tests:/tests:ro', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/agent-mail:$BUILD_ID', '-m', 'unittest', 'discover', '-s', '/tests', '-v']
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/agent-mail:$BUILD_ID']
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        if [ "${_DEPLOY}" = "true" ]; then
+          IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/services/agent-mail"
+          DIGEST=$$(gcloud artifacts docker images describe "$$IMAGE:$BUILD_ID" --format='value(image_summary.digest)')
+          test -n "$$DIGEST"
+          gcloud run services update agent-mail --project="$PROJECT_ID" --region="${_REGION}" --image="$$IMAGE@$$DIGEST" --quiet
+        fi
+substitutions:
+  _REGION: europe-west2
+  _DEPLOY: 'false'
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: 900s
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/services/agent-mail:$BUILD_ID'

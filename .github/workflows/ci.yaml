@@ -14,7 +14,7 @@ jobs:
           python-version: "3.11"
       # Graph tests need these; the pins come from requirements.txt so they
       # cannot drift. Installing it whole would pull torch and unstructured.
-      - run: pip install $(grep -E '^(fastapi|pydantic|openpyxl|httpx|python-multipart|pandas|numpy)==' services/ingestion/requirements.txt)
+      - run: pip install $(grep -E '^(fastapi|pydantic|openpyxl|httpx|python-multipart|pandas|numpy|google-auth|requests)==' services/ingestion/requirements.txt)
       - run: PYTHONPATH=services/ingestion python -m unittest discover -s services/ingestion/tests -v
       # Bootstrap helper is stdlib-only; reuse this job rather than a new one.
       - run: PYTHONPATH=infrastructure/scripts python -m unittest discover -s infrastructure/tests -v
@@ -45,6 +45,33 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
+  mail-agent-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/mail_agent
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      # Tests import sibling helpers (test_engine) directly, so tests/ is on the path.
+      - run: PYTHONPATH=.:tests python -m unittest discover -s tests -v
+
+  model-gateway-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/model_gateway
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: PYTHONPATH=.:tests python -m unittest discover -s tests -v
 
   terraform:
     runs-on: ubuntu-latest

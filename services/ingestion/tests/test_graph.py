@@ -110,7 +110,7 @@ class GraphTests(unittest.TestCase):
 
     def test_gemini_is_only_used_for_unstructured_sources_and_is_cached(self):
         result = Extraction.model_validate({"entities": [{"kind": "company", "name": "Manager LLC", "quote": "Manager LLC"}]})
-        with patch("app.extraction.gemini_extract", return_value=(result, "gemini-3.8-flash")) as model:
+        with patch("app.extraction.gemini_extract", return_value=(result, "gemini-3.1-pro-preview")) as model:
             ingestion = Ingestion(self.graph, use_gemini=True)
             item = Item("drive", "account", "text", "text.txt", b"Manager LLC")
             ingestion.ingest(item)
@@ -120,6 +120,23 @@ class GraphTests(unittest.TestCase):
                 b"kind,name,id_namespace,external_id\nfund,Fund,registry,12\n"))
             self.assertEqual(model.call_count, 1)
         self.assertTrue(any(e.kind == "company" for e in self.graph.state.entities.values()))
+
+    def test_gemini_extraction_uses_gateway_when_configured(self):
+        payload = {"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text":
+            '{"entities":[],"relationships":[],"projects":[]}' }]}}], "modelVersion": "gateway-model"}
+        response = httpx.Response(200, request=httpx.Request("POST", "https://gateway.example/v1/generate"), json=payload)
+        client = unittest.mock.MagicMock()
+        client.__enter__.return_value.post.return_value = response
+        with patch.dict(os.environ, {"MODEL_GATEWAY_URL": "https://gateway.example",
+                                    "GEMINI_API_KEY": "must-not-be-used"}), \
+                patch("app.extraction.fetch_id_token", return_value="identity"), \
+                patch("app.extraction.httpx.Client", return_value=client):
+            result, version = gemini_extract("Actual source")
+        call = client.__enter__.return_value.post.call_args
+        self.assertEqual(call.args[0], "https://gateway.example/v1/generate")
+        self.assertEqual(call.kwargs["json"]["cache_namespace"], "graph-extraction-v1")
+        self.assertEqual(version, "gateway-model")
+        self.assertEqual(result.entities, [])
 
     def test_temporal_terms_preserve_old_and_new_values(self):
         fund = self.graph.upsert("fund", "Fund", self.source)

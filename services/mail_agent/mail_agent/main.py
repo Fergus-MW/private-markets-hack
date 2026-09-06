@@ -1,0 +1,110 @@
+import os
+import re
+from email.utils import parseaddr
+from functools import lru_cache
+
+from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel, ConfigDict, Field
+from svix.webhooks import Webhook, WebhookVerificationError
+
+from .clients import GraphClient, Mailer, route
+from .engine import Engine
+from .ingestion import Ingestion
+from .storage import Busy, Repository, enqueue, key, tenant
+
+app = FastAPI(title="Private markets email agent")
+
+
+@lru_cache
+def repository():
+    return Repository()
+
+
+class Signup(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: str = Field(min_length=3, max_length=254, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
+@app.get("/healthz")
+def health():
+    return {"status": "ok"}
+
+
+# Service is private. Only the frontend and task identity have run.invoker.
+# Signup is called after Google has verified the OAuth email address.
+@app.post("/signup", status_code=202)
+def signup(request: Signup):
+    email = request.email.lower()
+    account = {"email": email, "tenant": tenant(email)}
+    repo = repository()
+    repo.create("accounts", key(email), account)
+    identifier = key("welcome-v1", email)
+    repo.create("jobs", identifier, {"kind": "welcome", **account})
+    enqueue(identifier)
+    Ingestion(repo, enqueue).request(account, "signup-v1")
+    return {"accepted": True}
+
+
+# Same private trust boundary as signup: the frontend proves the session and
+# sends the Google-verified email; this service never trusts a browser directly.
+@app.post("/ingestion/status")
+def ingestion_status(request: Signup):
+    email = request.email.lower()
+    repo = repository()
+    if not repo.get("accounts", key(email)):
+        raise HTTPException(404, "No account for this address")
+    return Ingestion(repo, enqueue).report({"email": email, "tenant": tenant(email)})
+
+
+@app.post("/webhook", status_code=202)
+async def webhook(request: Request):
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > 512 * 1024:
+            raise HTTPException(413, "Webhook too large")
+    try:
+        event = Webhook(os.environ["AGENTMAIL_WEBHOOK_SECRET"]).verify(bytes(body), dict(request.headers))
+    except (WebhookVerificationError, ValueError):
+        raise HTTPException(401, "Invalid webhook signature") from None
+    if event.get("event_type") != "message.received":
+        return {"ignored": True}
+    message = event.get("message", {})
+    if message.get("inbox_id") != os.environ["AGENTMAIL_INBOX_ID"]:
+        return {"ignored": True}
+    if set(message.get("labels", [])) & {"spam", "blocked", "unauthenticated", "sent"}:
+        return {"ignored": True}
+    headers = {name.lower(): value for name, value in (message.get("headers") or {}).items()}
+    if headers.get("auto-submitted", "no").lower() != "no" or headers.get("precedence", "").lower() in {"bulk", "list", "junk"}:
+        return {"ignored": True}
+    email = parseaddr(message.get("from") or "")[1].lower()
+    if not email or email == os.environ["AGENTMAIL_INBOX_ID"].lower():
+        return {"ignored": True}
+    account = repository().get("accounts", key(email))
+    if not account:
+        return {"ignored": True}
+    message_id = message.get("message_id")
+    if not isinstance(message_id, str) or not message_id:
+        raise HTTPException(400, "Missing message ID")
+    # AgentMail extracted_text excludes quoted thread history. Do not pull old
+    # instructions from the full quoted body when stripped text is available.
+    text = message.get("extracted_text") or message.get("text") or ""
+    if "extracted_text" in message:
+        text = message["extracted_text"] or ""
+    identifier = key("incoming", message["inbox_id"], message_id)
+    repository().create("jobs", identifier, {"kind": "incoming", **account,
+        "message_id": message_id, "thread_id": message.get("thread_id") or message_id,
+        "text": ((message.get("subject") or "") + "\n\n" + text)[:24000]})
+    enqueue(identifier)
+    return {"accepted": True}
+
+
+@app.post("/jobs/{identifier}")
+def process(identifier: str):
+    if not re.fullmatch(r"[a-f0-9]{64}", identifier):
+        raise HTTPException(422, "Invalid job ID")
+    try:
+        Engine(repository(), enqueue, Mailer(), GraphClient, route).process(identifier)
+    except Busy:
+        raise HTTPException(409, "Job already running; retry later") from None
+    return {"ok": True}

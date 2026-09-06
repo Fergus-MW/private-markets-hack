@@ -1,8 +1,12 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { OAuth2Client, GoogleAuth } from 'google-auth-library';
 
-export const SCOPES = ['openid', 'email', 'https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/drive.readonly'];
-const SOURCE_SCOPES = SCOPES.slice(2);
+export const SCOPES = ['openid', 'email', 'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/drive.file'];
+// Ingestion cannot work without the read scopes, so those stay required. drive.file
+// only enables writing back draft deliverables and grants access to files this app
+// created, never existing ones; declining it still connects and delivery says why.
+const SOURCE_SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/drive.readonly'];
 
 export function configuration(env = process.env) {
   const origin = new URL(env.PUBLIC_ORIGIN || 'http://localhost:5173');
@@ -128,6 +132,9 @@ export function createAuth(config, dependencies = {}) {
       // The credential must persist before the UI reports a successful connection.
       const id = connectorId(identity.email);
       await connect(id, credentials);
+      // Durable welcome job: reconnects use the same idempotent account key.
+      // A queue failure must remain visible, so reconnect can safely retry it.
+      if (dependencies.onSignup) await dependencies.onSignup(identity.email);
       const session = seal({ kind: 'connection', email: identity.email, connector: id, expires: Date.now() + 3_600_000 }, config.key);
       redirect(res, '/?connection=success', [clear, cookieHeader(config, 'connection', session, 3600)]);
     } catch (error) {

@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
-import { GoogleAuth } from 'google-auth-library';
 import { connectorId, unseal } from './auth.mjs';
+import { createRequest } from './upstream.mjs';
 
 export function assertion(session, method, path, secret, now = Math.floor(Date.now() / 1000)) {
   if (!secret || secret.length < 32) throw new Error('Graph identity signing is not configured');
@@ -12,11 +12,7 @@ export function assertion(session, method, path, secret, now = Math.floor(Date.n
 export function createGraphProxy(config, dependencies = {}) {
   const backend = process.env.INGESTION_URL;
   const secret = process.env.GRAPH_IDENTITY_SECRET;
-  const auth = new GoogleAuth();
-  const request = dependencies.request || (async options => {
-    const client = await auth.getIdTokenClient(backend);
-    return client.request(options);
-  });
+  const request = dependencies.request || createRequest(backend);
   return async (req, res, url) => {
     if (!/^\/api\/(graph|projects|sources|documents)(\/|$)/.test(url.pathname)) return false;
     const reply = (status, detail) => {

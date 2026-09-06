@@ -111,7 +111,7 @@ resource "google_secret_manager_secret_iam_member" "graph_identity_frontend" {
   member    = "serviceAccount:${google_service_account.frontend[0].email}"
 }
 resource "google_cloud_run_v2_service_iam_member" "frontend_graph" {
-  count    = var.frontend_image != null && var.ingestion_image != null ? 1 : 0
+  count    = (var.frontend_image != null || var.frontend_public_origin != null) && var.ingestion_image != null ? 1 : 0
   name     = google_cloud_run_v2_service.ingestion[0].name
   location = var.region
   role     = "roles/run.invoker"
