@@ -26,11 +26,35 @@ class BlobLimitTests(unittest.TestCase):
         query.assert_called_once()
 
     def test_the_limit_follows_the_configured_database_setting(self):
-        with patch.dict("os.environ", {"SURREAL_HTTP_MAX_RPC_BODY_SIZE": str(64 << 20)}):
-            import importlib
-            reloaded = importlib.reload(store_module)
-            self.assertGreater(reloaded.MAX_BLOB_BYTES, MAX_BLOB_BYTES)
-        importlib.reload(store_module)
+        # Computed, not reloaded: reloading the module swaps SourceTooLarge for a
+        # new class and breaks every other test's isinstance check.
+        self.assertEqual(store_module.MAX_BLOB_BYTES, store_module.blob_limit(RPC_BODY_LIMIT))
+        self.assertGreater(store_module.blob_limit(64 << 20), store_module.blob_limit(4 << 20))
+        self.assertEqual(store_module.blob_limit(1024), 0)
+
+
+class DatabaseRefusalTests(unittest.TestCase):
+    """The configured limit can lag what the database enforces while a change rolls
+    out. A 413 from the database must degrade the source, never fail the scan."""
+
+    def refuse(self, status):
+        import httpx
+        request = httpx.Request("POST", "http://db/rpc")
+        return httpx.HTTPStatusError("", request=request,
+                                     response=httpx.Response(status, request=request))
+
+    def test_a_database_413_becomes_a_source_too_large(self):
+        store = Store.__new__(Store)
+        with patch.object(Store, "query", side_effect=self.refuse(413)):
+            with self.assertRaises(SourceTooLarge):
+                store.save_source_bytes("k", b"x" * 100)
+
+    def test_other_database_errors_still_propagate(self):
+        store = Store.__new__(Store)
+        with patch.object(Store, "query", side_effect=self.refuse(503)):
+            with self.assertRaises(Exception) as caught:
+                store.save_source_bytes("k", b"x" * 100)
+        self.assertNotIsInstance(caught.exception, SourceTooLarge)
 
 
 class AdvertisedLimitTests(unittest.TestCase):
