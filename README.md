@@ -83,13 +83,6 @@ passes are shown and never hidden, why a blank awaiting a decision is rendered
 differently from an error, and why comparison tolerances are exact rather than
 proportional.
 
-### Two things it deliberately does not do
-
-It does not produce the deliverable, and it does not opine on judgement. It will tell
-you a valuation did not move and who reviewed it; it will not tell you whether the
-estimate is reasonable. It checks work; it does not do the work, and no finding is ever
-acted on automatically.
-
 ---
 
 ## Two levels of graph
