@@ -166,4 +166,15 @@ def refresh(request: RefreshRequest):
     the project graph the same way one sent to the agent does."""
     store, graph = load()
     known = [source_id for source_id in request.source_ids if source_id in graph.state.sources]
-    return {"projects": refresh_projects(store, graph, known), "sources": len(known)}
+    proposals = []
+    for source_id in known:
+        try:
+            # A correction letter reaching the user's own inbox must raise the same
+            # proposal as one sent to the agent. Still nothing is applied here.
+            proposals.extend(propose_for_source(graph, source_id))
+        except (ValueError, KeyError):
+            logger.exception("Term proposals could not be derived for %s", source_id)
+    result = {"projects": refresh_projects(store, graph, known), "sources": len(known),
+              "term_proposals": proposals}
+    save(store, graph)
+    return result
