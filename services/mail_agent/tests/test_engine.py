@@ -2,8 +2,8 @@ import copy
 import unittest
 from unittest.mock import Mock
 
-from mail_agent.engine import Engine
-from mail_agent.storage import Busy, key
+from mail_agent.engine import WELCOME, WORKFLOWS, Engine
+from mail_agent.storage import Busy, key, tenant
 
 
 class Memory:
@@ -18,6 +18,21 @@ class Memory:
 
     def get(self, collection, identifier):
         return self.rows.get(identifier)
+
+    def reserve_ingestion(self, account, identifier, retry=False):
+        """Mirrors Repository.reserve_ingestion, including its refusal rules."""
+        stored = self.rows.get(key(account["email"]))
+        if not stored or stored["tenant"] != account["tenant"] or account["tenant"] != tenant(account["email"]):
+            raise ValueError("Unknown ingestion account")
+        previous = stored.get("ingestion_job")
+        current = self.rows.get(previous) if previous else None
+        if previous and (previous == identifier or not retry or not current or not current.get("done")
+                         or not current.get("result", {}).get("retry_safe", False)):
+            return previous
+        self.rows[identifier] = {"kind": "ingestion", "email": account["email"],
+                                 "tenant": account["tenant"], "created_at": 0}
+        stored["ingestion_job"] = identifier
+        return identifier
 
     def remember(self, thread_id, job_id, event):
         self.rows[thread_id] = {"events": [{"job_id": job_id, **event}]}
@@ -146,6 +161,26 @@ class EngineTests(unittest.TestCase):
                 self.assertIn(link, self.mailer.send.call_args.args[1])
                 self.queue.assert_not_called()
 
+    def test_qc_dashboard_link_is_returned_without_queueing_work(self):
+        self.graph.dashboard.return_value = "https://example.test/dashboard/" + "a" * 64
+        self.call = {"name": "get_qc_dashboard_link", "args": {"project_id": "a" * 64}}
+        self.incoming()
+        self.engine.process("incoming")
+        self.assertEqual(self.mailer.send.call_count, 2)
+        self.assertIn("https://example.test/dashboard/" + "a" * 64, self.mailer.send.call_args.args[1])
+        self.graph.visualization.assert_not_called()
+        self.queue.assert_not_called()
+
+    def test_finished_qc_mail_links_the_dashboard_for_that_run(self):
+        link = "https://example.test/dashboard/" + "a" * 64 + "?run=" + "c" * 64
+        self.repo.create("jobs", "worker", {"kind": "workflow", "tool_call": self.call, **self.account})
+        self.graph.call.return_value = {"status": "completed", "summary": "One tier a finding.",
+                                        "dashboard": link, "artifacts": {"Report": "https://example.test/report"}}
+        self.engine.process("worker")
+        body = self.mailer.send.call_args.args[1]
+        self.assertIn(link, body)
+        self.assertIn("amount at stake", body)
+
     def test_live_workflow_status_returns_verbose_trace_without_starting_work(self):
         task_id = "b" * 64
         self.repo.create("jobs", task_id, {"kind": "workflow", "tenant": self.account["tenant"],
@@ -178,7 +213,7 @@ class EngineTests(unittest.TestCase):
 
         self.engine.process("status")
 
-        self.assertIn("couldn't find", self.mailer.send.call_args.args[1])
+        self.assertIn("could not find", self.mailer.send.call_args.args[1])
         self.graph.call.assert_not_called()
 
     def test_started_task_id_is_retained_in_thread_context_for_status_followups(self):
@@ -248,6 +283,27 @@ class ClientMailTests(unittest.TestCase):
         self.run_job()
         path = self.graphs["u-2"].call.call_args.args[1]
         self.assertEqual(path, "/mail/senders/a%20b%2F..%2Fevil%40client.com")
+
+
+class WelcomeTests(unittest.TestCase):
+    def test_welcome_describes_every_capability_it_promises(self):
+        # The welcome rots quietly when a tool is added; keep it named there.
+        for phrase in ("first run-through", "QC", "ingestion", "dashboard", "graph",
+                       "logs", "Google Drive", "quarter"):
+            self.assertIn(phrase.lower(), WELCOME.lower(), phrase)
+
+    def test_welcome_never_promises_approval(self):
+        self.assertIn("I approve nothing", WELCOME)
+        for claim in ("approved", "sign-off is not needed", "release-ready"):
+            self.assertNotIn(claim, WELCOME)
+
+    def test_every_workflow_is_reachable_from_the_welcome(self):
+        # Each user-facing workflow should be discoverable without asking support.
+        described = {"qc": "QC", "first-run": "first run-through",
+                     "explain": "read back", "answer": "quote the source"}
+        self.assertEqual(set(described), {name for name, _ in WORKFLOWS.values()})
+        for phrase in described.values():
+            self.assertIn(phrase, WELCOME)
 
 
 if __name__ == "__main__":

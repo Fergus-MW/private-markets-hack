@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from email.utils import parseaddr
 from functools import lru_cache
 
@@ -66,6 +67,40 @@ def recipients(message):
             if address and address not in found:
                 found.append(address)
     return found[:20]
+
+
+# Cloud Scheduler only. New mail in a user's own mailbox raises no event we can
+# receive, so ingestion is polled: a run per window picks up whatever arrived.
+# reserve_ingestion refuses to start while a run is in flight or when the last
+# one ended unconfirmed, so a stuck account is never re-run behind its own back.
+@app.post("/ingestion/poll")
+def poll():
+    repo = repository()
+    window = max(60, int(os.environ.get("INGESTION_POLL_WINDOW_SECONDS", "3600")))
+    request_id = "poll-%d" % (time.time() // window)
+    started, held, skipped = 0, 0, 0
+    # ponytail: one bounded page, matching engine.py. Paginate if accounts outgrow it.
+    for account in repo.list("accounts", limit=int(os.environ.get("INGESTION_POLL_LIMIT", "500"))):
+        if not account.get("email") or not account.get("tenant"):
+            skipped += 1
+            continue
+        expected = key("ingestion", account["tenant"], request_id)
+        # A run for this window may already exist from a scheduler retry, and
+        # reserve_ingestion returns it unchanged. Only a change is a new run.
+        before = (repo.get("accounts", key(account["email"])) or {}).get("ingestion_job")
+        try:
+            identifier = Ingestion(repo, enqueue).request(account, request_id, retry=True)
+        except ValueError:
+            # Account failed its own tenant check; skip it, do not abort the sweep.
+            skipped += 1
+            continue
+        # A returned identifier that is not the one for this window means the
+        # account already has a run that reserve_ingestion declined to replace.
+        if identifier == expected and before != expected:
+            started += 1
+        else:
+            held += 1
+    return {"started": started, "held": held, "skipped": skipped, "window": window}
 
 
 @app.post("/webhook", status_code=202)

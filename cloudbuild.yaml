@@ -32,7 +32,11 @@ steps:
     args:
       - -ceu
       - |
-        if [ "${_DEPLOY}" != "true" ]; then exit 0; fi
+        case "${_DEPLOY}" in
+          true) ;;
+          false) echo "Build-only run: deployment explicitly disabled."; exit 0 ;;
+          *) echo "_DEPLOY must be true or false" >&2; exit 1 ;;
+        esac
         IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/services/ingestion"
         DIGEST=$$(gcloud artifacts docker images describe "$$IMAGE:$BUILD_ID" --format='value(image_summary.digest)')
         test -n "$$DIGEST"

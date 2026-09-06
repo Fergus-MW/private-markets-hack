@@ -33,3 +33,15 @@ variable "surreal_image" {
   type    = string
   default = "surrealdb/surrealdb:v2.3.10"
 }
+
+variable "mail_poll_schedule" {
+  description = "How often to start an ingestion run per account so new mail is picked up (UTC cron)."
+  type        = string
+  default     = "*/30 * * * *"
+}
+
+variable "mail_poll_window_seconds" {
+  description = "Deduplication window for polled ingestion runs. Keep at or below the poll interval, or runs are skipped."
+  type        = number
+  default     = 1800
+}

@@ -28,6 +28,8 @@ class ClientTests(unittest.TestCase):
             "project_id": self.PROJECT})["tool_call"]["name"], "get_project_graph_link")
         self.assertEqual(self.routed("get_workspace_graph_link", {})["tool_call"]["name"],
                          "get_workspace_graph_link")
+        self.assertEqual(self.routed("get_qc_dashboard_link", {
+            "project_id": self.PROJECT})["tool_call"]["name"], "get_qc_dashboard_link")
 
     def test_workflow_status_requires_an_owned_project_and_exact_task_id(self):
         call = self.routed("check_workflow_status", {
@@ -43,6 +45,8 @@ class ClientTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.routed("get_project_graph_link", {"project_id": "b" * 64})
         with self.assertRaises(ValueError):
+            self.routed("get_qc_dashboard_link", {"project_id": "b" * 64})
+        with self.assertRaises(ValueError):
             self.routed("answer_project_question", {"project_id": "b" * 64, "question": "Tell me"})
 
     def test_visualization_links_are_private_frontend_routes(self):
@@ -52,6 +56,13 @@ class ClientTests(unittest.TestCase):
                              "https://frontend.example/graphs/" + self.PROJECT)
             with self.assertRaises(ValueError):
                 GraphClient.visualization("../other")
+            self.assertEqual(GraphClient.dashboard(self.PROJECT),
+                             "https://frontend.example/dashboard/" + self.PROJECT)
+            with self.assertRaises(ValueError):
+                GraphClient.dashboard("../other")
+        with patch.dict(os.environ, {"FRONTEND_PUBLIC_ORIGIN": "http://frontend.example"}):
+            with self.assertRaises(ValueError):
+                GraphClient.dashboard(self.PROJECT)
 
     def test_production_model_calls_use_the_gateway(self):
         projects = [{"key": self.PROJECT, "name": "Fund A"}]
