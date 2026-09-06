@@ -13,7 +13,7 @@ export function fraction(providers) {
   if (!providers.length) return 0;
   const share = 1 / providers.length;
   return providers.reduce((total, provider) => {
-    if (['completed', 'partial', 'failed'].includes(provider.status)) return total + share;
+    if (['completed', 'partial', 'failed', 'empty'].includes(provider.status)) return total + share;
     if (provider.status === 'queued') return total;
     return total + share * (1 - 1 / (1 + provider.checked / 20));
   }, 0);

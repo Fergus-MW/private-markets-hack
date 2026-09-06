@@ -33,8 +33,8 @@ test('progress never reaches full until a provider actually finishes', () => {
   assert.ok(fraction(running) > fraction([{ ...running[0], checked: 1 }, running[1]]));
 });
 
-test('failed and partial providers still count as finished work, not stalled', () => {
-  for (const status of ['completed', 'partial', 'failed']) {
+test('every terminal provider state counts as finished work, not stalled', () => {
+  for (const status of ['completed', 'partial', 'failed', 'empty']) {
     assert.equal(fraction([{ provider: 'drive', status, checked: 0, counts: {} }]), 1, status);
   }
 });

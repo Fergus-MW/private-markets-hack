@@ -227,13 +227,24 @@ class Ingestion:
             if len(text) > 60000:
                 source.warnings.append("Gemini extraction skipped: source exceeds 60000 characters; narrow/split the source")
             else:
-                extraction, model = gemini_extract(text)
-                source.metadata["gemini_model"] = model
-                source.metadata["proposals"] = extraction.model_dump(mode="json")
-                # Names alone are source-scoped: model output never causes fuzzy merges.
-                source.metadata["proposal_status"] = "validated"
-                self.accept_proposals(source_id)
-                source.metadata["extraction_complete"] = True
+                # Model proposals are optional enrichment. A malformed or
+                # unsupported proposal must not discard an otherwise valid
+                # source or trap every idempotent retry on the same cached
+                # response. Restore the programmatic graph and retain the
+                # source as partial so a later run can retry enrichment.
+                before_proposals = self.graph.state.model_copy(deep=True)
+                try:
+                    extraction, model = gemini_extract(text)
+                    source.metadata["gemini_model"] = model
+                    source.metadata["proposals"] = extraction.model_dump(mode="json")
+                    # Names alone are source-scoped: model output never causes fuzzy merges.
+                    source.metadata["proposal_status"] = "validated"
+                    self.accept_proposals(source_id)
+                    source.metadata["extraction_complete"] = True
+                except (ValueError, KeyError, IndexError):
+                    self.graph.state = before_proposals
+                    source = self.graph.state.sources[source_id]
+                    source.warnings.append("Gemini extraction not run: model output failed validation; source retained for retry")
         elif structured:
             source.metadata["extraction_complete"] = True
         else:

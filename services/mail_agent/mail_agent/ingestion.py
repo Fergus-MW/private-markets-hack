@@ -146,7 +146,7 @@ class Ingestion:
                 raise Busy()
             progress = self.connector.progress(job, identifier, provider)
             succeeded = all(execution.get("succeededCount", 0) == execution.get("taskCount", 1) for execution in executions)
-            state.update(finished=True, status=(progress["status"] if succeeded and progress and progress["status"] in {"completed", "partial"} else "failed"),
+            state.update(finished=True, status=(progress["status"] if succeeded and progress and progress["status"] in {"completed", "partial", "empty"} else "failed"),
                          counts=(progress or {}).get("counts", {}))
             providers[provider] = state
             save(providers=providers)
@@ -156,10 +156,11 @@ class Ingestion:
                 counts[name] = counts.get(name, 0) + count
         total = counts.get("ingested", 0) + counts.get("unchanged_ingested", 0)
         statuses = {state["status"] for state in providers.values()}
-        if statuses == {"completed"} and total:
+        successful = bool(statuses) and statuses <= {"completed", "empty"}
+        if successful and total:
             return {"status": "completed", "retry_safe": True, "counts": counts,
                     "summary": f"Your files have been ingested and your knowledge graph has been generated. It's ready to go. Drive and Gmail both finished successfully, with {total} ingested or already up-to-date items. You can now ask me to run the QC gate or a first run-through for a project."}
-        if statuses == {"completed"}:
+        if successful:
             return {"status": "empty", "retry_safe": True, "counts": counts,
                     "summary": "The Drive and Gmail scans finished, but no supported files were ingested. Your knowledge graph is not ready yet. Add source files and ask me to retry ingestion."}
         return {"status": "failed" if "failed" in statuses else "partial", "retry_safe": True, "counts": counts,

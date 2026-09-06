@@ -121,6 +121,21 @@ class GraphTests(unittest.TestCase):
             self.assertEqual(model.call_count, 1)
         self.assertTrue(any(e.kind == "company" for e in self.graph.state.entities.values()))
 
+    def test_invalid_gemini_output_retains_the_source_for_retry(self):
+        item = Item("gmail", "account", "message", "message.txt", b"Manager appears in useful source text")
+        # The duplicate name fails after accept_proposals has already inserted
+        # its first entity, exercising rollback as well as source retention.
+        proposal = Extraction.model_validate({"entities": [
+            {"kind": "company", "name": "Manager", "quote": "Manager"},
+            {"kind": "company", "name": "Manager", "quote": "Manager"}]})
+        with patch("app.extraction.gemini_extract", return_value=(proposal, "gemini-3.1-pro-preview")):
+            source_id = Ingestion(self.graph, use_gemini=True).ingest(item)
+        source = self.graph.state.sources[source_id]
+        self.assertEqual(source.text, "Manager appears in useful source text")
+        self.assertNotIn("extraction_complete", source.metadata)
+        self.assertTrue(any("source retained for retry" in warning for warning in source.warnings))
+        self.assertFalse(any(entity.name == "Manager" for entity in self.graph.state.entities.values()))
+
     def test_gemini_extraction_uses_gateway_when_configured(self):
         payload = {"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text":
             '{"entities":[],"relationships":[],"projects":[]}' }]}}], "modelVersion": "gateway-model"}

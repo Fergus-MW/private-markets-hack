@@ -60,7 +60,9 @@ class IngestionTests(unittest.TestCase):
         self.client.start.assert_not_called()
 
     def test_partial_empty_and_failed_scans_never_claim_ready(self):
-        for status, counts, expected in [("partial", {"ingested": 2, "archive_only": 1}, "partial"), ("completed", {}, "empty"), ("failed", {"failed": 1}, "failed")]:
+        for status, counts, expected in [("partial", {"ingested": 2, "archive_only": 1}, "partial"),
+                                         ("completed", {}, "empty"), ("empty", {}, "empty"),
+                                         ("failed", {"failed": 1}, "failed")]:
             with self.subTest(status=status, counts=counts):
                 self.job.pop("providers", None)
                 self.completed(status, counts)
@@ -71,6 +73,15 @@ class IngestionTests(unittest.TestCase):
         self.completed()
         self.client.executions.return_value = [{"completionTime": "now", "failedCount": 1, "taskCount": 1}]
         self.assertEqual(self.manager.advance(self.identifier, self.job, self.save)["status"], "failed")
+
+    def test_one_empty_provider_does_not_block_valid_ingested_sources(self):
+        self.client.executions.return_value = [{"completionTime": "now", "taskCount": 1, "succeededCount": 1}]
+        self.client.progress.side_effect = lambda job, run, provider: (
+            {"status": "empty", "counts": {}} if provider == "drive"
+            else {"status": "completed", "counts": {"ingested": 2}})
+        result = self.manager.advance(self.identifier, self.job, self.save)
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(result["counts"], {"ingested": 2})
 
     def test_uncertain_launch_blocks_automatic_retry(self):
         self.job["providers"] = {"drive": {"launching_at": time.time() - 1000}}

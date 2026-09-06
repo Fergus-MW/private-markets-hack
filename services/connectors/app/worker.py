@@ -318,6 +318,16 @@ def object_prefix(env=os.environ):
     return prefix + "/"
 
 
+def completion_status(counts):
+    """Report an empty scan explicitly instead of presenting it as completed."""
+    if not counts:
+        return "empty"
+    incomplete = any(counts.get(kind) for kind in (
+        "partial", "archive_only", "metadata_only",
+        "unchanged_archive_only", "unchanged_metadata_only"))
+    return "partial" if incomplete else "completed"
+
+
 def main():
     import httplib2
     from google.auth.exceptions import RefreshError
@@ -379,8 +389,7 @@ def main():
         LOG.info("Scan finished counts=%s", counts)
         if counts.get("failed"):
             raise RuntimeError("Scan has failed items; rerun to retry them")
-        incomplete = any(counts.get(k) for k in ("partial", "archive_only", "metadata_only", "unchanged_archive_only", "unchanged_metadata_only"))
-        progress("partial" if incomplete else "completed")
+        progress(completion_status(counts))
     except Exception as error:
         progress("failed", type(error).__name__)
         raise

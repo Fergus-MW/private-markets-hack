@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from app.worker import (EXPORTS, GOOGLE_NATIVE, Archive, Lease, credentials_info, download, items,
-                        make_ingest, object_prefix, object_key, process)
+                        completion_status, make_ingest, object_prefix, object_key, process)
 
 
 class MemoryArchive:
@@ -24,6 +24,11 @@ class MemoryArchive:
 
 
 class WorkerTests(unittest.TestCase):
+    def test_empty_scan_is_explicit_and_never_claims_completion(self):
+        self.assertEqual(completion_status({}), "empty")
+        self.assertEqual(completion_status({"ingested": 1}), "completed")
+        self.assertEqual(completion_status({"archive_only": 1}), "partial")
+
     def test_gmail_pages_include_every_folder_and_empty_pages(self):
         service = MagicMock()
         request = service.users().messages().list
