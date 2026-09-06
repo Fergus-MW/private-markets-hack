@@ -60,6 +60,19 @@ jobs:
       # Tests import sibling helpers (test_engine) directly, so tests/ is on the path.
       - run: PYTHONPATH=.:tests python -m unittest discover -s tests -v
 
+  model-gateway-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/model_gateway
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: PYTHONPATH=.:tests python -m unittest discover -s tests -v
+
   terraform:
     runs-on: ubuntu-latest
     steps:

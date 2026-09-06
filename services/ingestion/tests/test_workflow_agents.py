@@ -4,7 +4,8 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from openpyxl import load_workbook
 from app.workflow_agents import (Draft, ProjectAnswer, agent_status, findings,
-                                 validate_answer, validate_draft, draft_workbook)
+                                 validate_answer, validate_draft, draft_workbook,
+                                 context_text)
 
 
 class DraftTests(unittest.TestCase):
@@ -89,6 +90,15 @@ class StatusTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as missing:
             agent_status("b" * 64, "a" * 64)
         self.assertEqual(missing.exception.status_code, 404)
+
+
+class CachePrefixTests(unittest.TestCase):
+    def test_later_agent_fields_do_not_move_the_project_evidence_prefix(self):
+        base = {"project": {"key": "p"}, "instructions": "run", "sources": {"s": {"text": "evidence"}},
+                "evidence_truncated": False}
+        first = context_text(base)
+        review = context_text({**base, "draft": {"summary": "draft"}})
+        self.assertTrue(review.startswith(first[:-1] + ","))
 
 
 if __name__ == "__main__":

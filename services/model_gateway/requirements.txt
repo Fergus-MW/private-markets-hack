@@ -2,4 +2,6 @@ fastapi==0.116.1
 uvicorn==0.35.0
 httpx==0.28.1
 google-auth==2.57.1
+# google.auth.transport.requests needs this; without it the image fails on import.
+requests==2.34.2
 pydantic==2.13.5

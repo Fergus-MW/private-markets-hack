@@ -116,6 +116,10 @@ class GraphTests(unittest.TestCase):
             ingestion.ingest(item)
             ingestion.ingest(item)
             self.assertEqual(model.call_count, 1)
+            ingestion.ingest(Item("drive", "account", "csv", "mapping.csv",
+                b"kind,name,id_namespace,external_id\nfund,Fund,registry,12\n"))
+            self.assertEqual(model.call_count, 1)
+        self.assertTrue(any(e.kind == "company" for e in self.graph.state.entities.values()))
 
     def test_gemini_extraction_uses_gateway_when_configured(self):
         payload = {"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text":
@@ -133,10 +137,6 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(call.kwargs["json"]["cache_namespace"], "graph-extraction-v1")
         self.assertEqual(version, "gateway-model")
         self.assertEqual(result.entities, [])
-            ingestion.ingest(Item("drive", "account", "csv", "mapping.csv",
-                b"kind,name,id_namespace,external_id\nfund,Fund,registry,12\n"))
-            self.assertEqual(model.call_count, 1)
-        self.assertTrue(any(e.kind == "company" for e in self.graph.state.entities.values()))
 
     def test_temporal_terms_preserve_old_and_new_values(self):
         fund = self.graph.upsert("fund", "Fund", self.source)
