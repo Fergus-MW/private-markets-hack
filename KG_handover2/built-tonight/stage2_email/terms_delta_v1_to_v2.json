@@ -1,0 +1,74 @@
+{
+  "entity": "Kestrel Lammwick Co-Invest LP",
+  "investor_id": "7335_02891",
+  "investor_name": "Trentcombe Fund Investors LLC",
+  "effective": "2026-07-01",
+  "received": "2026-07-06",
+  "source_document": "Side letter SL-TRENTCOMBE-2026-01 (amended and restated)",
+  "delivered_by": "email from investor operations contact",
+  "changes": [
+    {
+      "field": "mgmt_fee_rate_pa",
+      "old": 0.0085,
+      "new": 0.0075,
+      "clause": "2(a)",
+      "label": "X"
+    },
+    {
+      "field": "fee_basis",
+      "old": "Commitment",
+      "new": "Invested Capital",
+      "clause": "2(b)",
+      "label": "Y"
+    },
+    {
+      "field": "fee_offset_pct",
+      "old": 0.8,
+      "new": 1.0,
+      "clause": "2(c)",
+      "label": "Z"
+    },
+    {
+      "field": "cas_deadline_days",
+      "old": "60",
+      "new": "45",
+      "clause": "5",
+      "label": "admin"
+    },
+    {
+      "field": "notices_contact",
+      "old": "Morgan Ashby, Fund Operations",
+      "new": "Kevin Gu, Head of Fund Operations",
+      "clause": "6",
+      "label": "admin"
+    },
+    {
+      "field": "notices_email",
+      "old": "m.ashby@trentcombe-fi.example",
+      "new": "kevin.gu@gradient-path.com",
+      "clause": "6",
+      "label": "admin"
+    },
+    {
+      "field": "source_document",
+      "old": "Side letter SL-TRENTCOMBE-2024-01 dated 2024-03-15",
+      "new": "Side letter SL-TRENTCOMBE-2026-01 (amended and restated) effective 2026-07-01",
+      "clause": "-",
+      "label": "admin"
+    },
+    {
+      "field": "source_clause",
+      "old": "2(a), 2(b), 4",
+      "new": "2(a), 2(b), 2(c), 5, 6",
+      "clause": "-",
+      "label": "admin"
+    },
+    {
+      "field": "valid_from",
+      "old": "2024-03-15",
+      "new": "2026-07-01",
+      "clause": "-",
+      "label": "admin"
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "run_id": "20260905-222113-fb732a",
+  "run_at": "2026-09-05T22:21:13+01:00",
+  "gate": "terms_checks",
+  "mode": "arithmetic-only",
+  "entity": "Kestrel Lammwick Co-Invest LP",
+  "entity_id": null,
+  "as_of": "2026-06-30",
+  "schedule_file": "stage1_error_injected/q2_2026_fee_and_commitment_schedule_ADMIN_DRAFT.xlsx",
+  "schedule_sha256": "3f12d4a44cc9e49b66af0f0efc3ad6dc7423f2a2adb5d60f3cfac4fc5b85d075",
+  "terms_file": null,
+  "terms_snapshot_sha256": null,
+  "terms_rows_in_force": 0,
+  "entity_terms_sha256": null,
+  "summary": {
+    "SKIPPED": 7,
+    "PASS": 4
+  },
+  "findings_by_tier": {},
+  "checks": [
+    {
+      "check": "TC00",
+      "tier": "a",
+      "status": "SKIPPED",
+      "name": "Every schedule investor has a register row in force [needs the register]",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC01",
+      "tier": "b",
+      "status": "SKIPPED",
+      "name": "Rate applied equals the register [needs the register]",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC02",
+      "tier": "b",
+      "status": "SKIPPED",
+      "name": "Fee basis applied equals the register [needs the register]",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC03",
+      "tier": "a",
+      "status": "SKIPPED",
+      "name": "Fee inside or outside commitment as the register says [needs the register]",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC04",
+      "tier": "a",
+      "status": "SKIPPED",
+      "name": "Fee-exempt investors charged nothing [needs the register]",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC05",
+      "tier": "b",
+      "status": "SKIPPED",
+      "name": "Offset percentage equals the register [needs the register]",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC06",
+      "tier": "a",
+      "status": "PASS",
+      "name": "Schedule allocation share equals commitment share (schedule-internal)",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC07",
+      "tier": "b",
+      "status": "PASS",
+      "name": "Gross fee = basis amount x rate / 4",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC08",
+      "tier": "b",
+      "status": "PASS",
+      "name": "Totals row foots to the column sums",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": "{}"
+    },
+    {
+      "check": "TC09",
+      "tier": "a",
+      "status": "SKIPPED",
+      "name": "Net fee equals the fee recomputed from the register [needs the register]",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    },
+    {
+      "check": "TC10",
+      "tier": "a",
+      "status": "PASS",
+      "name": "Roll-forward foots inside the schedule (called_end = start + calls + fee inside; unfunded = commitment - called)",
+      "investors": "",
+      "n": 0,
+      "amount": 0.0,
+      "detail": ""
+    }
+  ]
+}

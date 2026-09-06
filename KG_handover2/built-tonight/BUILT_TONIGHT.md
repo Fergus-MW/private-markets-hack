@@ -1,0 +1,16 @@
+# Built on the night of 5 to 6 September 2026
+
+Everything here runs from this folder with `./VERIFY.sh` (needs `uv`; about a minute; writes only into `verify_out/`). Nothing calls a model.
+
+| # | What | Files | Proof |
+|---|---|---|---|
+| 1 | **The seam passes with the partner's own code.** `terms_as_of` imported from `services/ingestion` (read-only), run over our fixtures through his `Ingestion`, exported in his endpoint's response shape | `graph_export/export_with_partner_code.py`, `graph_export/terms_as_of_<date>.{json,csv}`, `graph_export/README.md` | `contract_test.py` prints **equal** for 30 Jun 2026 (v1) and 30 Sep 2026 (v2). Fund key for Corvus 2254 came out as `b8c8dbc6…` |
+| 2 | **The gate reads the register from the graph.** `terms_checks.py` takes `--terms <csv>`, `--terms-url <endpoint>` (appends `?as_of=`), or `--terms-json <saved response>`; the run record says which was used | `eval/terms_checks.py` | Runs B and C2 from his response shape, by file and over live HTTP, match the saved runs check for check; an unreachable endpoint stops with a one-line message and exit 1 |
+| 3 | **The contract test reads his JSON directly** | `eval/contract_test.py --export <response.json>` | Equal on both dates; a deliberate mismatch (v2 export against v1 fixture) lists exactly the 9 Trentcombe cells |
+| 4 | **Surface 1, the page.** Unchanged renderer except amount at stake is now the tier a sum (build plan 4b), not the sum of every finding, which double counted | `eval/render_results.py`; rendered pages in `frontend/public/gate/` | Q3 page reads 9,296.43; Q2 reads 22,149.55 |
+| 5 | **Surface 2, the workbook.** A copy of the administrator's own draft with a green `QC gate` sheet in front (scoreboard as COUNTIFS/SUMIFS formulas over the findings table, findings by tier, passes shown) and, on the Schedule sheet, a `QC result` column (tick or failing check ids) plus a cell comment on every offending cell with check, evidence, because and source | `eval/gate_to_workbook.py`, `results/q3_fee_schedule_QC.xlsx`, `results/q2_fee_schedule_QC.xlsx` | Q3: 4 findings, 7 passes, comments on 5 cells of Trentcombe's row; Q2: TC03 only |
+| 6 | **Surface 3, the notification.** Plain text from the run record for chat or email: scoreboard, top finding, link to the page. Decisions are never made here | `eval/notify.py`, `results/notification_q3.txt` | Six lines |
+| 7 | **The gate pages inside the frontend**, as static files under `frontend/public/gate/` (Vite copies `public/` to `dist/`; the existing Node server serves `/gate/`). No change to any existing file | `frontend/public/gate/` (index, Q2, Q3, loader gate page, hand-back memo, levels chart, README) | Open `/gate/` on `npm run dev` |
+| 8 | **Design mock of the front end**, four screens in the connect screen's own vocabulary, real run data | Claude Design canvas, private to KG; KG shares the link in the morning | |
+
+Run records the demo uses: `results/runA_q2_no_brain.json` (arithmetic only), `results/runB_q2_brain_on.json` (terms v1), `results/runC2_q3_after_email.json` (terms v2). Fixtures are here in the same relative layout as the demo folder so every script runs unchanged.
