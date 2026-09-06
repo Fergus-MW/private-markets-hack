@@ -21,10 +21,10 @@ function fixture(options = {}) {
   const handle = createAuth(options.config || config, { oauth, connect: async (id, credentials) => {
     if (options.failSave) throw new Error('storage unavailable');
     saved.push({ id, credentials });
-  }, onSignup: options.onSignup });
-  async function request(path, cookie = '') {
+  }, onSignup: options.onSignup, logger: { warn() {}, error() {} } });
+  async function request(path, cookie = '', headers = {}) {
     const response = { writeHead(status, headers) { this.status = status; this.headers = headers; }, end(body) { this.body = body; } };
-    await handle({ headers: { cookie } }, response, new URL(path, config.origin));
+    await handle({ headers: { cookie, ...headers } }, response, new URL(path, (options.config || config).origin));
     return response;
   }
   async function start() {
@@ -33,6 +33,18 @@ function fixture(options = {}) {
   }
   return { request, start, saved, get verifier() { return verifier; }, get exchangeCount() { return exchangeCount; } };
 }
+
+test('OAuth starts on the canonical callback host before issuing its transaction cookie', async () => {
+  const f = fixture();
+  const redirected = await f.request('/api/auth/google/start', '', { host: 'frontend-123.europe-west2.run.app' });
+  assert.equal(redirected.headers.Location, 'https://app.example.com/api/auth/google/start');
+  assert.deepEqual(redirected.headers['Set-Cookie'], []);
+  assert.equal(f.exchangeCount, 0);
+
+  const started = await f.request('/api/auth/google/start', '', { host: 'app.example.com' });
+  assert.equal(new URL(started.headers.Location).hostname, 'accounts.google.com');
+  assert.match(started.headers['Set-Cookie'][0], /^oauth_transaction=/);
+});
 
 test('one consent flow requests both integrations with offline access and PKCE', async () => {
   const f = fixture();

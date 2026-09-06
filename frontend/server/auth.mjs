@@ -66,7 +66,9 @@ class ConnectionError extends Error {}
 
 export function createAuth(config, dependencies = {}) {
   const redirectUri = `${config.origin}/api/auth/google/callback`;
+  const canonicalHost = new URL(config.origin).host.toLowerCase();
   const oauth = dependencies.oauth || new OAuth2Client(config.clientId, config.clientSecret, redirectUri);
+  const logger = dependencies.logger || console;
   const cloud = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
   // Create-if-absent, grant the connector job read access, then write the version.
   // Ordering matters: a version must never exist that the job cannot read.
@@ -102,6 +104,14 @@ export function createAuth(config, dependencies = {}) {
     if (!['/api/auth/google/start', '/api/auth/google/callback'].includes(url.pathname)) return false;
     if (!config.enabled) { redirect(res, '/?connection=setup'); return true; }
     if (url.pathname.endsWith('/start')) {
+      // Cloud Run exposes more than one hostname. OAuth transaction cookies are
+      // host-only, so issue the cookie from the same canonical host Google uses
+      // for the callback.
+      const requestHost = String(req.headers.host || '').trim().toLowerCase();
+      if (requestHost && requestHost !== canonicalHost) {
+        redirect(res, `${config.origin}/api/auth/google/start`);
+        return true;
+      }
       const state = randomBytes(32).toString('hex');
       const nonce = randomBytes(32).toString('hex');
       const { codeVerifier, codeChallenge } = await oauth.generateCodeVerifierAsync();
@@ -113,33 +123,41 @@ export function createAuth(config, dependencies = {}) {
       return true;
     }
     const clear = cookieHeader(config, 'oauth_transaction', '', 0);
+    let stage = 'transaction';
     try {
       const transaction = unseal(cookie(req, 'oauth_transaction'), config.key);
       if (transaction?.kind !== 'oauth' || !equals(transaction.state, url.searchParams.get('state'))) throw new ConnectionError('expired');
       if (url.searchParams.has('error')) throw new ConnectionError('denied');
       const code = url.searchParams.get('code');
       if (!code) throw new ConnectionError('expired');
+      stage = 'token_exchange';
       const { tokens } = await oauth.getToken({ code, codeVerifier: transaction.codeVerifier, redirect_uri: redirectUri });
       if (!tokens.id_token || !tokens.access_token || !tokens.refresh_token) throw new ConnectionError('permissions');
+      stage = 'identity';
       const ticket = await oauth.verifyIdToken({ idToken: tokens.id_token, audience: config.clientId });
       const identity = ticket.getPayload();
       if (!identity?.email_verified || !equals(identity.nonce, transaction.nonce)) throw new ConnectionError('account');
       if (!identity.email) throw new ConnectionError('account');
+      stage = 'permissions';
       const info = await oauth.getTokenInfo(tokens.access_token);
       if (!SOURCE_SCOPES.every(scope => info.scopes.includes(scope))) throw new ConnectionError('permissions');
       const credentials = { type: 'authorized_user', client_id: config.clientId, client_secret: config.clientSecret,
         refresh_token: tokens.refresh_token, token_uri: 'https://oauth2.googleapis.com/token', scopes: info.scopes };
       // The credential must persist before the UI reports a successful connection.
       const id = connectorId(identity.email);
+      stage = 'credential_storage';
       await connect(id, credentials);
       // Durable welcome job: reconnects use the same idempotent account key.
       // A queue failure must remain visible, so reconnect can safely retry it.
+      stage = 'welcome_queue';
       if (dependencies.onSignup) await dependencies.onSignup(identity.email);
+      stage = 'session';
       const session = seal({ kind: 'connection', email: identity.email, connector: id, expires: Date.now() + 3_600_000 }, config.key);
       redirect(res, '/?connection=success', [clear, cookieHeader(config, 'connection', session, 3600)]);
     } catch (error) {
       // Never log token exchange responses, codes, cookies, identities or credentials.
-      if (!(error instanceof ConnectionError)) console.error('Google connection failed');
+      const reason = error instanceof ConnectionError ? error.message : 'failed';
+      logger[error instanceof ConnectionError ? 'warn' : 'error'](JSON.stringify({ event: 'google_oauth_callback_failed', stage, reason }));
       redirect(res, `/?connection=${error instanceof ConnectionError ? error.message : 'failed'}`, [clear, cookieHeader(config, 'connection', '', 0)]);
     }
     return true;
