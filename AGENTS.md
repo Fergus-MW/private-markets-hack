@@ -23,6 +23,25 @@ Deploy only to release a change that is already proven locally. If you genuinely
 cannot reproduce a problem locally, say so and explain what is missing, rather
 than reaching for the deployed environment as the default.
 
+## Production releases go through CI/CD
+
+Never deploy application code directly from a workstation. Do not run
+`gcloud builds submit`, `gcloud run deploy`, `gcloud run services update`, or an
+equivalent imperative deployment command. Commit and push the reviewed change;
+the configured CI/CD release pipeline owns the image build, immutable digest,
+and production rollout.
+
+A pull-request commit runs checks, while deployment happens only when that
+commit reaches the branch or event configured for release. Follow the CI/CD run
+until it succeeds before reporting the change as deployed. A successful `git
+push` alone is not proof that production changed.
+
+If a service is missing from CI/CD, or its trigger is disabled or broken, update
+the pipeline as part of the change or report the release as blocked. Do not
+bypass a missing pipeline with a manual production deployment. Read-only
+production inspection, such as pulling Cloud Logging during incident diagnosis,
+is allowed and does not count as a deployment.
+
 ## Prove it against a real database
 
 Six tests are gated behind environment variables because they need a live
