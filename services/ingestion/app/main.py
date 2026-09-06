@@ -14,6 +14,7 @@ from app.project_api import router as project_router
 from app.mail_ingest import router as mail_router
 from app.source_api import router as source_router
 from app.workflow_agents import router as workflow_agent_router
+from app.term_api import router as term_router
 
 logger = logging.getLogger(__name__)
 MAX_BYTES = 20 * 1024 * 1024
@@ -25,6 +26,7 @@ app.include_router(project_router)
 app.include_router(source_router)
 app.include_router(mail_router)
 app.include_router(workflow_agent_router)
+app.include_router(term_router)
 
 
 @app.get("/healthz")
