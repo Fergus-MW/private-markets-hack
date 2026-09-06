@@ -175,11 +175,18 @@ class Lease:
 def settled(previous, ingest):
     """Whether a prior result still stands. A source archived because it was too
     large is not settled: raising the limit has to let it in on the next scan,
-    or the limit change quietly achieves nothing."""
-    if previous.get("status") != "archive_only" or previous.get("reason") != "Source size limit":
+    or the limit change quietly achieves nothing.
+
+    Records written before the reason was split say only "Parser size or format
+    limit", so decide from the source itself rather than the wording: retry when
+    it would now be accepted on both size and format."""
+    if previous.get("status") != "archive_only" or previous.get("reason") == "Unsupported format":
         return True
     limit = getattr(ingest, "max_bytes", None)
-    return limit is None or previous.get("size_bytes", 0) > limit
+    extensions = getattr(ingest, "extensions", None)
+    if limit is None or previous.get("size_bytes", 0) > limit:
+        return True
+    return extensions is not None and Path(previous.get("filename", "")).suffix.lower() not in extensions
 
 
 def process(service, provider, item, archive, ingest, max_bytes, heartbeat=lambda: None, visited=(), collected=None):
@@ -309,6 +316,7 @@ def make_ingest(url, provider=None, account=None, tenant=None):
         incomplete = any("skipped" in w.lower() or "not run" in w.lower() or "deferred_to_project" in w.lower() for w in result.get("warnings", []))
         return {"status": "partial" if incomplete else "ingested", **{k: result[k] for k in ("document_id", "source_id") if k in result}}
     ingest.max_bytes = max_bytes
+    ingest.extensions = extensions
     if provider:
         ingest.pipeline_version = "canonical-sources-v2-user" if tenant else "canonical-sources-v1"
         if os.environ.get("GRAPH_USE_GEMINI", "false").lower() == "true":

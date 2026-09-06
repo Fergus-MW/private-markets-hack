@@ -1,10 +1,21 @@
 # Private markets QC
 
-**A checking tool for fund reporting.** A fund manager receives a draft — a set of
-financial statements, a capital account schedule, a loader file — and has to decide
-whether it can be accepted. This reads the draft, reads the legal documents that
-govern it, and returns a cited list of what is wrong, what is merely untidy, and what
-nobody has decided yet.
+**Quarterly fund reporting, checked against the legal documents that govern it.**
+
+Every quarter a fund administrator delivers a draft to the fund manager: financial
+statements, a capital account schedule, a loader file. Someone has to decide whether it
+can be accepted. This reads that draft, reads the partnership agreements and side
+letters behind it, and returns a cited list of what is wrong, what is merely untidy,
+and what nobody has decided yet.
+
+**Who it is for.** The reviewer at the fund manager deciding whether to accept a
+delivery. The preparer at the administrator checking their own work before it leaves.
+Fund operations answering which entities made it across and for how much. The auditor
+tracing a figure back to the clause it rests on. [More on each below](#who-its-for).
+
+You work with it by email. It builds a knowledge graph from your Gmail and Drive, holds
+a register of investor terms that a named person has ratified, and runs a deterministic
+checker that no language model can overrule.
 
 It exists because of one number: **review rounds to acceptance.** Today that number is
 six or seven. The administrator is not careless and not slow — each round turns around

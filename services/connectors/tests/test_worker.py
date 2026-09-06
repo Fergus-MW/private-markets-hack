@@ -308,11 +308,20 @@ class SettledTests(unittest.TestCase):
     """Raising the graph's size limit must let previously archived sources in."""
 
     class Ingest:
-        def __init__(self, max_bytes):
-            self.max_bytes = max_bytes
+        def __init__(self, max_bytes, extensions=frozenset({".xlsx", ".pdf"})):
+            self.max_bytes, self.extensions = max_bytes, extensions
 
-    def archived(self, size, reason="Source size limit"):
-        return {"status": "archive_only", "reason": reason, "size_bytes": size}
+    def archived(self, size, reason="Source size limit", filename="big.xlsx"):
+        return {"status": "archive_only", "reason": reason, "size_bytes": size,
+                "filename": filename}
+
+    def test_a_legacy_record_is_judged_by_the_source_not_the_wording(self):
+        # Records written before the reason was split say only this, and cover both
+        # size and format. Retry only when the source now passes on both counts.
+        legacy = self.archived(5_000_000, "Parser size or format limit")
+        self.assertFalse(settled(legacy, self.Ingest(20_000_000)))
+        self.assertTrue(settled({**legacy, "filename": "big.zip"}, self.Ingest(20_000_000)))
+        self.assertTrue(settled({**legacy, "size_bytes": 99_000_000}, self.Ingest(20_000_000)))
 
     def test_a_source_archived_for_size_is_retried_once_it_fits(self):
         self.assertFalse(settled(self.archived(5_000_000), self.Ingest(20_000_000)))
