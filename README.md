@@ -26,6 +26,11 @@ read access to Gmail and Drive.
 While the Google consent screen is unverified, sign-in works for accounts added as
 test users — ask the team to add yours if it turns you away.
 
+**Or read the demo deck first: [Brain and Gate](Brain_and_Gate_demo.pdf)** (6 pages) —
+the problem in fund managers' own words, the quarterly GL reporting workflow it plugs
+into, the gate scored against 18,929 rows of real migration data, and a worked example
+of one investor email changing the terms.
+
 ---
 
 ## What it actually does
@@ -87,6 +92,59 @@ acted on automatically.
 
 ---
 
+## Two levels of graph
+
+This trips people up, so it is worth being explicit. There are **two** graphs, and they
+do different jobs.
+
+**Your workspace graph** is everything your account knows: the people, companies, funds,
+quarterly projects and documents found across your Gmail and Drive, and the links
+between them. There is one per connected account, it is built automatically as soon as
+you connect, and it is **alive** — every re-ingest adds to it, and identity resolution
+merges duplicates into each other over time. It is what you explore at
+`/graphs/workspace`, labelled *"Your knowledge"*. Use it to find things.
+
+**A project graph** is one fund, one quarter, one job — and, crucially, not just the
+evidence but **the work done on it**: the input manifests, the intermediate workbooks,
+the terms snapshots, who ratified what, every run and every individual check result.
+One is created on demand the first time a workflow runs on that project. It is
+**frozen**: materialisation *copies* the selected sources in, and copied records and
+artifacts are immutable ever after. You open it at `/graphs/<project-id>`.
+
+| | Workspace graph | Project graph |
+|---|---|---|
+| Scope | Your whole account | One fund, one quarter |
+| Created | Automatically, on ingest | On demand, by a workflow run |
+| Changes over time | Yes — grows, merges duplicates | No — append-only, immutable copies |
+| Holds | Entities, sources, edges | Copied evidence **plus** artifacts, ratifications, runs, check results |
+| Answers | "What do I have?" | "What did we check, against what, and what did it say?" |
+
+### The important part: a project graph is a copy, not a link
+
+There are no cross-database record links. Original IDs are carried over as provenance
+values, but the copied records are physically independent — so **changing your workspace
+graph has no effect on an existing project graph until someone explicitly
+re-materialises it.**
+
+That is the entire reason for the split. A check result has to be reproducible years
+later, which means its inputs must be frozen. If the checker read the live workspace
+graph, re-running the same draft next month could quietly produce different findings —
+and a finding you cannot reproduce is a finding you cannot defend to an auditor. The
+separation also means a run touches exactly one project database and can never reach the
+main graph, Gmail, Drive, or a model.
+
+Scope is explicit for the same reason: materialisation copies the source IDs you
+*select*, because filenames and proximity are not a reliable way to decide what belongs
+to a quarter.
+
+One convenience: a project is useful *before* it has a project database. Open one that
+has never had a workflow run and the API falls back to computing that project's
+neighbourhood out of your workspace graph — its fund, its management company, its
+attached sources, and the entities those sources evidence. So you get a meaningful view
+from day one; it simply becomes a real, frozen graph the first time a workflow runs.
+
+---
+
 ## The experience, start to finish
 
 ### 1. You connect — one button, once
@@ -127,7 +185,8 @@ plainly and offers the partial view instead of rounding up to success.
 
 ### 3. You explore what it found
 
-`/graphs` lists your workspace graph plus a graph for each project. Opening one gives a
+`/graphs` lists your workspace graph plus a graph for each project — the
+[two levels described above](#two-levels-of-graph). Opening one gives a
 full-viewport WebGL view — pan, zoom, fit, click a node to select it and highlight its
 neighbours — of the people, companies, funds, documents and quarterly projects it
 extracted, and the links between them.
@@ -273,17 +332,40 @@ Browser ──▶ frontend (Node/Vite)  ──── OAuth, session, proxy, grap
 | [`services/model_gateway/`](services/model_gateway/) | The only holder of Vertex AI permission. One warm instance, AIMD concurrency window, retries with jitter, stable prompt bytes for implicit caching |
 | [`infrastructure/`](infrastructure/) | Terraform — the source of truth for production |
 
-## Isolation
+## Isolation — how the two graph levels are stored
 
-The canonical graph lives in `markets/documents`. Each signed-in account gets its own
-database; each quarterly project gets its own database in the `projects` namespace,
-containing copies of its evidence, entities, input files, derived files, decisions and
-run history. There are no cross-database record links. A checker run touches exactly
-one project database and never queries the main graph, Gmail, Drive, or a model.
+Every graph is a separate SurrealDB database. With `GRAPH_MULTI_USER=true` (production),
+the `projects` namespace holds both levels:
 
-Materialization copies *explicitly selected* source IDs into a project — not everything
-that looks related. Filenames and proximity are not reliable scope. Re-materializing
-adds new evidence versions; existing copied records and artifacts stay immutable.
+| Level | Database | Contents |
+|---|---|---|
+| Workspace | `user_<sha256(tenant)>` | That account's canonical entities, sources, source bytes, parsed documents and edges |
+| Project | `project_<sha256(tenant + ':' + project_id)>` | One project's copied evidence, originals, intermediate files, decisions and runs |
+
+The tenant is the connector ID derived from the verified account email, so an arbitrary
+user field, header, URL or project ID cannot select someone else's database. Both Gmail
+and Drive for one account populate the same workspace graph. Identical entity or project
+keys in two users' graphs are separate records. Only the internal provisioner may create
+databases; user-facing queries use database-scoped credentials.
+
+Single-tenant deployments use the shared `markets/documents` database for the workspace
+level instead. That one is bootstrapped by `startup.sh.tftpl` with a principal the
+service does not hold, so its schema is a manual, bootstrap-level change — it is **not**
+covered by [`migrations.py`](services/ingestion/app/migrations.py).
+
+There are no cross-database record links. A checker run touches exactly one project
+database and never queries the main graph, Gmail, Drive, or a model. Materialization
+copies *explicitly selected* source IDs — not everything that looks related; filenames
+and proximity are not reliable scope. Re-materializing adds new evidence versions;
+existing copied records and artifacts stay immutable.
+
+`GET /graph/views` lists the workspace plus one entry per project.
+`GET /graph/views/<id>` resolves `workspace` against the account database and any other
+ID against that project's database, falling back to a canonical source-scoped
+neighbourhood when the project database does not exist yet
+([`graph_api.py:93-127`](services/ingestion/app/graph_api.py#L93-L127)). Both return only
+node IDs, names, kinds and relationship metadata — never source text, file bytes or
+credentials.
 
 ## The checkers
 
@@ -446,6 +528,7 @@ provision time only ever reaches databases that did not exist yet.
 | Document | Covers |
 |---|---|
 | [AGENTS.md](AGENTS.md) | **Read first if you are contributing.** The local-first test loop and the rules that keep local and production in step |
+| [Brain_and_Gate_demo.pdf](Brain_and_Gate_demo.pdf) | The 6-page demo deck: the problem, the workflow, the gate scored on real migration data, and one email changing the terms |
 | [PRD.MD](PRD.MD) | The full product requirements, including what is not yet built |
 | [services/ingestion/GRAPH.md](services/ingestion/GRAPH.md) | Graph schema, connector setup, fixture verification |
 | [services/ingestion/WORKFLOWS.md](services/ingestion/WORKFLOWS.md) | Project isolation, the workflow API, ratification, run records |
