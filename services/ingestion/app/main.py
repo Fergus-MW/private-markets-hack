@@ -10,11 +10,17 @@ from app.context import PIPELINE_VERSION, context_page, prepare_context
 from app.parser import SUPPORTED, parse_document
 from app.store import Store
 from app.graph_api import router as graph_router
+from app.project_api import router as project_router
+from app.source_api import router as source_router
 
 logger = logging.getLogger(__name__)
 MAX_BYTES = 20 * 1024 * 1024
 app = FastAPI(title="Private markets knowledge ingestion", version="3.0.0")
+from app.identity import IdentityMiddleware
+app.add_middleware(IdentityMiddleware)
 app.include_router(graph_router)
+app.include_router(project_router)
+app.include_router(source_router)
 
 
 @app.get("/healthz")
@@ -33,7 +39,7 @@ def ready():
 
 @app.get("/formats")
 def formats():
-    return {"extensions": sorted(SUPPORTED), "max_bytes": MAX_BYTES,
+    return {"extensions": sorted(SUPPORTED), "source_extensions": sorted(SUPPORTED | {".json"}), "max_bytes": MAX_BYTES,
             "pdf_strategies": ["auto", "ocr_only", "hi_res"], "ocr_languages": ["eng"]}
 
 

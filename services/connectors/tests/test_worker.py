@@ -272,3 +272,39 @@ class MultiAccountTests(unittest.TestCase):
                                        "GOOGLE_OAUTH_CREDENTIALS": '{"refresh_token": "mounted"}'})
         self.assertEqual(result, {"refresh_token": "from-secret"})
         self.assertEqual(client.access_secret_version.call_args.kwargs["name"], name)
+
+
+class CanonicalBridgeTests(unittest.TestCase):
+    def test_connector_posts_stable_source_envelope(self):
+        import json
+        with patch('google.oauth2.id_token.fetch_id_token', return_value='test'), patch('requests.get') as get, patch('requests.post') as post:
+            get.return_value.json.return_value={'extensions':['.pdf'],'source_extensions':['.eml'],'max_bytes':20000000}
+            post.return_value.json.return_value={'source_id':'source1','document_id':None}
+            ingest=make_ingest('https://ingestion','gmail','client-a')
+            result=ingest('mail.eml','message/rfc822',io.BytesIO(b'mail'),4,metadata={'source':{'id':'message1'},'raw_object':'raw/mail'})
+            self.assertEqual(result['source_id'],'source1')
+            self.assertEqual(post.call_args.args[0],'https://ingestion/sources')
+            envelope=json.loads(post.call_args.kwargs['data']['envelope'])
+            self.assertEqual(envelope['account'],'client-a')
+            self.assertEqual(envelope['external_id'],'message1')
+
+class UserGraphTests(unittest.TestCase):
+    def test_credentials_determine_tenant_and_prefix_cannot_override_it(self):
+        from app.worker import connector_tenant
+        env={'CONNECTOR_BUCKET':'shared','CONNECTOR_SECRET':'projects/p/secrets/connector-u-0123456789abcdef-oauth/versions/latest'}
+        self.assertEqual(connector_tenant(env),'u-0123456789abcdef')
+        with self.assertRaises(ValueError):
+            connector_tenant({**env,'CONNECTOR_PREFIX':'u-fedcba9876543210'})
+        self.assertEqual(connector_tenant({**env,'CONNECTOR_PREFIX':'u-0123456789abcdef'}),'u-0123456789abcdef')
+        with self.assertRaises(ValueError):
+            connector_tenant({'CONNECTOR_BUCKET':'shared','CONNECTOR_PREFIX':'someone'})
+
+    def test_source_handoff_has_signed_identity(self):
+        from app.worker import graph_identity
+        with patch.dict('os.environ',GRAPH_IDENTITY_SECRET='s'*64):
+            payload,signature=graph_identity('alice').split('.')
+        import json,hmac,hashlib
+        self.assertEqual(signature,hmac.new(b's'*64,payload.encode(),hashlib.sha256).hexdigest())
+        claims=json.loads(base64.urlsafe_b64decode(payload+'='*(-len(payload)%4)))
+        self.assertEqual(claims['tenant'],'alice')
+        self.assertEqual(claims['kind'],'connector')

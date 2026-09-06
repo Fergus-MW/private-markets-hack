@@ -179,9 +179,16 @@ resource "google_compute_instance" "database" {
     surreal_image = var.surreal_image
     }
   )
+  # Startup-script updates otherwise force VM replacement. Existing databases
+  # receive explicit, non-disruptive schema/bootstrap migrations instead.
+  lifecycle {
+    ignore_changes = [metadata_startup_script]
+  }
   depends_on = [google_compute_router_nat.main, google_secret_manager_secret_version.root,
     google_secret_manager_secret_version.ingestion, google_secret_manager_secret_iam_member.root,
-  google_secret_manager_secret_iam_member.database_ingestion]
+    google_secret_manager_secret_iam_member.database_ingestion,
+    google_secret_manager_secret_version.project_provisioner,
+  google_secret_manager_secret_iam_member.database_project_provisioner]
 }
 resource "google_artifact_registry_repository" "services" {
   location      = var.region
@@ -249,9 +256,6 @@ resource "google_cloud_run_v2_service" "ingestion" {
           }
         }
       }
-      # Project provisioning for the knowledge-graph pipeline. These secrets are
-      # created and rotated outside Terraform; only the wiring is declared here so
-      # an apply cannot silently strip them from the running service.
       env {
         name  = "SURREAL_PROJECT_ADMIN_USER"
         value = "workflow_provisioner"
@@ -260,8 +264,8 @@ resource "google_cloud_run_v2_service" "ingestion" {
         name = "SURREAL_PROJECT_ADMIN_PASSWORD"
         value_source {
           secret_key_ref {
-            secret  = "surrealdb-project-provisioner-password"
-            version = "1"
+            secret  = google_secret_manager_secret.project_provisioner.secret_id
+            version = google_secret_manager_secret_version.project_provisioner.version
           }
         }
       }
@@ -269,8 +273,21 @@ resource "google_cloud_run_v2_service" "ingestion" {
         name = "SURREAL_PROJECT_SECRET"
         value_source {
           secret_key_ref {
-            secret  = "surrealdb-project-credential-key"
-            version = "1"
+            secret  = google_secret_manager_secret.project_secret.secret_id
+            version = google_secret_manager_secret_version.project_secret.version
+          }
+        }
+      }
+      env {
+        name  = "GRAPH_MULTI_USER"
+        value = "true"
+      }
+      env {
+        name = "GRAPH_IDENTITY_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.graph_identity.secret_id
+            version = google_secret_manager_secret_version.graph_identity.version
           }
         }
       }
@@ -284,7 +301,9 @@ resource "google_cloud_run_v2_service" "ingestion" {
       }
     }
   }
-  depends_on = [google_secret_manager_secret_iam_member.ingestion]
+  depends_on = [google_secret_manager_secret_iam_member.graph_identity_ingestion, terraform_data.project_namespace, google_secret_manager_secret_iam_member.ingestion,
+    google_secret_manager_secret_iam_member.ingestion_project_provisioner,
+  google_secret_manager_secret_iam_member.ingestion_project_secret]
 }
 resource "google_cloud_run_v2_service_iam_member" "invoker" {
   for_each = var.ingestion_image == null ? toset([]) : var.invoker_members

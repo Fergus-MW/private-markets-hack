@@ -4,6 +4,8 @@ python-multipart==0.0.20
 httpx==0.28.1
 pydantic==2.13.5
 openpyxl==3.1.5
+pandas==3.0.5
+numpy==2.4.6
 unstructured[all-docs]==0.18.15
 # Keep PDF inference compatible and prevent replacement of CPU-only PyTorch.
 torch==2.8.0+cpu

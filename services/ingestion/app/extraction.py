@@ -126,6 +126,8 @@ class Ingestion:
             raise ValueError("Source must contain between 1 byte and 20 MiB")
         sha = hashlib.sha256(item.content).hexdigest()
         source_id = key(item.provider, item.account, item.external_id, item.revision, sha, self.fund_id, self.snapshot_as_of)
+        if self.store:
+            self.store.save_source_bytes(source_id, item.content)
         existing = self.graph.state.sources.get(source_id)
         if existing and (not self.use_gemini or existing.metadata.get("extraction_complete")):
             return source_id
@@ -153,7 +155,7 @@ class Ingestion:
                 if sum(entry.file_size for entry in archive.infolist()) > 100 * 1024 * 1024:
                     raise OverflowError("Expanded workbook exceeds 100 MiB")
             workbook = load_workbook(io.BytesIO(item.content), read_only=True, data_only=True, keep_links=False)
-            sections, length = [], 0
+            sections, length, deferred = [], 0, False
             try:
                 for sheet in workbook:
                     rows = []
@@ -161,8 +163,14 @@ class Ingestion:
                         row = ["" if value is None else str(value) for value in values]
                         length += sum(map(len, row)) + len(row)
                         if length > MAX_TEXT or len(rows) >= 50000 or len(row) > 1000:
-                            raise OverflowError("Workbook exceeds extraction limits")
+                            deferred = True
+                            break
                         rows.append(row)
+                    if deferred:
+                        sections = ["Large workbook: original bytes retained; project-local parsing required.\n" + "\n".join(f"{ws.title}: {ws.max_row} rows, {ws.max_column} columns" for ws in workbook)]
+                        tables = []
+                        warnings.append("deferred_to_project: workbook exceeds canonical text limits")
+                        break
                     output = io.StringIO()
                     csv.writer(output).writerows(rows)
                     sections.append("Sheet: " + sheet.title + "\n" + output.getvalue())
@@ -199,7 +207,7 @@ class Ingestion:
             outcomes = [self.table(rows, source_id) for rows in tables]
             structured = all(outcomes)
         # Unknown schemas remain visible sources. The model never replaces structured numbers.
-        if not structured and self.use_gemini:
+        if not structured and self.use_gemini and not any(w.startswith("deferred_to_project") for w in warnings):
             if len(text) > 60000:
                 source.warnings.append("Gemini extraction skipped: source exceeds 60000 characters; narrow/split the source")
             else:

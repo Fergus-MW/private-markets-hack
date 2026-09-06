@@ -5,6 +5,8 @@ make interrupted scans restartable without repeating successful ingestion.
 """
 import base64
 import hashlib
+import hmac
+import re
 import json
 import logging
 import os
@@ -191,11 +193,16 @@ def process(service, provider, item, archive, ingest, max_bytes, heartbeat=lambd
         return status
     marker = "completed/" + key + ".json"
     previous = archive.read(marker)
-    if previous and (ingest is None or previous["status"] in {"ingested", "archive_only", "metadata_only"}):
+    pipeline_version = getattr(ingest, "pipeline_version", None)
+    pipeline_version = pipeline_version if isinstance(pipeline_version, str) else None
+    compatible = not pipeline_version or previous and previous.get("pipeline_version") == pipeline_version
+    if previous and compatible and (ingest is None or previous["status"] in {"ingested", "archive_only", "metadata_only"}):
         return "unchanged"
     if provider == "drive" and item["mimeType"].startswith(GOOGLE_NATIVE) and item["mimeType"] not in EXPORTS:
         record = {"provider": provider, "source": item, "status": "metadata_only",
                   "reason": "No supported content export for this Google-native type", "raw_object": None}
+        if pipeline_version:
+            record["pipeline_version"] = pipeline_version
         archive.write("metadata/" + key + ".json", record)
         archive.write(marker, record)
         return "metadata_only"
@@ -211,13 +218,41 @@ def process(service, provider, item, archive, ingest, max_bytes, heartbeat=lambd
         if ingest:
             heartbeat()
             source.seek(0)
-            record.update(ingest(filename, mime, source, size))
+            if pipeline_version:
+                record.update(ingest(filename, mime, source, size, metadata=record))
+                record["pipeline_version"] = pipeline_version
+            else:
+                record.update(ingest(filename, mime, source, size))
         heartbeat()
         archive.write(marker, record)
     return record["status"]
 
 
-def make_ingest(url):
+def graph_identity(tenant):
+    secret = os.environ.get('GRAPH_IDENTITY_SECRET', '')
+    if len(secret) < 32:
+        raise ValueError('GRAPH_IDENTITY_SECRET is required for multi-user ingestion')
+    now = int(time.time())
+    claims = {'tenant': tenant, 'actor': tenant, 'kind': 'connector', 'aud': 'knowledge-graph',
+              'iat': now, 'exp': now + 60, 'method': 'POST', 'path': '/sources'}
+    payload = base64.urlsafe_b64encode(json.dumps(claims, separators=(',', ':')).encode()).decode().rstrip('=')
+    return payload + '.' + hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+
+
+def connector_tenant(env=os.environ):
+    secret = env.get('CONNECTOR_SECRET', '')
+    match = re.search(r'/secrets/connector-(u-[a-f0-9]{16})-oauth/versions/', secret)
+    prefix = env.get('CONNECTOR_PREFIX', '').strip('/')
+    if match:
+        if prefix and prefix != match[1]:
+            raise ValueError('Connector prefix does not match credential owner')
+        return match[1]
+    if prefix:
+        raise ValueError('Per-account prefix requires matching per-account credentials')
+    return 'service_' + hashlib.sha256(env['CONNECTOR_BUCKET'].encode()).hexdigest()
+
+
+def make_ingest(url, provider=None, account=None, tenant=None):
     import requests
     from google.auth.transport.requests import Request
     from google.oauth2.id_token import fetch_id_token
@@ -227,17 +262,30 @@ def make_ingest(url):
     formats = requests.get(url + "/formats", headers={"Authorization": "Bearer " + token}, timeout=(30, 60))
     formats.raise_for_status()
     capabilities = formats.json()
-    extensions = set(capabilities["extensions"])
+    extensions = set(capabilities.get("source_extensions", capabilities["extensions"]) if provider else capabilities["extensions"])
     max_bytes = capabilities["max_bytes"]
 
-    def ingest(filename, mime, source, size):
+    def ingest(filename, mime, source, size, metadata=None):
         if size > max_bytes or Path(filename).suffix.lower() not in extensions:
             return {"status": "archive_only", "reason": "Parser size or format limit"}
         token = fetch_id_token(Request(), url)
-        response = requests.post(url + "/documents", headers={"Authorization": "Bearer " + token},
-                                 files={"file": (filename, source, mime)}, timeout=(30, 910))
+        options = {}
+        if provider:
+            original = metadata["source"]
+            options["data"] = {"envelope": json.dumps({"provider": provider, "account": account,
+                "external_id": original["id"], "revision": str(original.get("version", "")),
+                "metadata": {"connector_archive": metadata["raw_object"], **original}})}
+        headers = {"Authorization": "Bearer " + token}
+        if tenant:
+            headers['X-Graph-Identity'] = graph_identity(tenant)
+        response = requests.post(url + ("/sources" if provider else "/documents"),
+                                 headers=headers,
+                                 files={"file": (filename, source, mime)}, timeout=(30, 910), **options)
         response.raise_for_status()
-        return {"status": "ingested", "document_id": response.json()["document_id"]}
+        result = response.json()
+        return {"status": "ingested", **{k: result[k] for k in ("document_id", "source_id") if k in result}}
+    if provider:
+        ingest.pipeline_version = "canonical-sources-v2-user" if tenant else "canonical-sources-v1"
     return ingest
 
 
@@ -283,7 +331,8 @@ def main():
     service = build(provider, "v1" if provider == "gmail" else "v3",
                     http=AuthorizedHttp(credentials, http=httplib2.Http(timeout=120)), cache_discovery=False)
     bucket = storage.Client().bucket(os.environ["CONNECTOR_BUCKET"])
-    prefix = object_prefix()
+    tenant = connector_tenant() if os.environ.get('GRAPH_MULTI_USER', 'false').lower() == 'true' else None
+    prefix = (tenant + '/' if tenant and tenant.startswith('u-') else object_prefix())
     lease = Lease(bucket, prefix)
     if not lease.acquire():
         LOG.info("Another execution holds the connection lease")
@@ -291,7 +340,7 @@ def main():
     counts = {}
     try:
         url = os.environ.get("INGESTION_URL", "").rstrip("/")
-        ingest = make_ingest(url) if url else None
+        ingest = make_ingest(url, provider, os.environ["CONNECTOR_BUCKET"] + ("/" + prefix.rstrip("/") if prefix else ""), tenant=tenant) if url else None
         for item in items(service, provider, os.environ.get("SOURCE_QUERY", ""), os.environ.get("DRIVE_ID", "")):
             lease.renew()
             try:

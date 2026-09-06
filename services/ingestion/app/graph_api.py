@@ -68,6 +68,9 @@ def schema():
 
 @router.post("/connectors/sync")
 def sync(request: SyncRequest):
+    from app.identity import tenant
+    if tenant():
+        raise HTTPException(409, 'Use the account-scoped connector worker for synchronization')
     store, graph = load()
     connector = GoogleConnector()
     try:

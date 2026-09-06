@@ -87,18 +87,30 @@ resource "google_cloud_run_v2_service" "frontend" {
   deletion_protection = false
   ingress             = "INGRESS_TRAFFIC_ALL"
   template {
+    timeout         = "900s"
     service_account = google_service_account.frontend[0].email
     containers {
       image = var.frontend_image
       resources {
         limits = { cpu = "1", memory = "512Mi" }
       }
+      env {
+        name = "GRAPH_IDENTITY_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.graph_identity.secret_id
+            version = google_secret_manager_secret_version.graph_identity.version
+          }
+        }
+      }
       dynamic "env" {
         for_each = {
-          PUBLIC_ORIGIN             = coalesce(var.frontend_public_origin, "")
-          GOOGLE_OAUTH_CLIENT_ID    = var.frontend_oauth_client_id
-          CONNECTOR_PROJECT         = google_project.main.project_id
-          CONNECTOR_SERVICE_ACCOUNT = try(google_service_account.connector[keys(local.connector_jobs)[0]].email, "")
+          INGESTION_URL              = try(google_cloud_run_v2_service.ingestion[0].uri, "")
+          PUBLIC_ORIGIN              = coalesce(var.frontend_public_origin, "")
+          GOOGLE_OAUTH_CLIENT_ID     = var.frontend_oauth_client_id
+          CONNECTOR_PROJECT          = google_project.main.project_id
+          CONNECTOR_SERVICE_ACCOUNTS = join(",", [for account in google_service_account.connector : account.email])
+          CONNECTOR_SERVICE_ACCOUNT  = try(google_service_account.connector[keys(local.connector_jobs)[0]].email, "")
         }
         content {
           name  = env.key
@@ -122,7 +134,7 @@ resource "google_cloud_run_v2_service" "frontend" {
       }
     }
   }
-  depends_on = [google_secret_manager_secret_iam_member.frontend, google_project_iam_member.frontend_connect]
+  depends_on = [google_secret_manager_secret_iam_member.graph_identity_frontend, google_cloud_run_v2_service_iam_member.frontend_graph, google_secret_manager_secret_iam_member.frontend, google_project_iam_member.frontend_connect]
 }
 
 variable "frontend_oauth_client_id" {

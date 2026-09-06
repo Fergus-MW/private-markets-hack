@@ -14,8 +14,10 @@ jobs:
           python-version: "3.11"
       # Graph tests need these; the pins come from requirements.txt so they
       # cannot drift. Installing it whole would pull torch and unstructured.
-      - run: pip install $(grep -E '^(fastapi|pydantic|openpyxl|httpx|python-multipart)==' services/ingestion/requirements.txt)
+      - run: pip install $(grep -E '^(fastapi|pydantic|openpyxl|httpx|python-multipart|pandas|numpy)==' services/ingestion/requirements.txt)
       - run: PYTHONPATH=services/ingestion python -m unittest discover -s services/ingestion/tests -v
+      # Bootstrap helper is stdlib-only; reuse this job rather than a new one.
+      - run: PYTHONPATH=infrastructure/scripts python -m unittest discover -s infrastructure/tests -v
 
   connector-tests:
     runs-on: ubuntu-latest

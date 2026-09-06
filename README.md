@@ -10,6 +10,10 @@ Upload → Unstructured partitioning / OCR → section-aware chunks → SurrealD
 
 The graph has fixed schemas for people, companies, funds, and quarterly administration projects; versioned email/file evidence; conservative identity resolution; and dated investor terms. See [connector setup, graph API, and fixture verification](services/ingestion/GRAPH.md). The existing upload/context API below remains available independently. There is no embedding or question-answering service.
 
+## Project workflows
+
+Each quarterly project can now have a separate database in the `projects` namespace, with copied evidence, original files, local terms snapshots, intermediate artifacts and review history. The workflow runs only against that project database. See [isolated project workflows and API](services/ingestion/WORKFLOWS.md) for the automation endpoint, ratification, setup and tests.
+
 ## Input formats
 
 Gmail and Google Drive sources can also be pulled by dedicated Cloud Run Jobs. They archive original files and Google-native document exports in private GCS buckets, then pass supported documents, spreadsheets, presentations, emails and images to this service. Google Docs, Sheets and Slides export to DOCX, XLSX and PPTX. See [connector provisioning and account setup](infrastructure/CONNECTORS.md) for full-mailbox imports, Drive files, schedules, and retry behavior.
@@ -65,3 +69,5 @@ docker compose exec -e PYTHONPATH=/app ingestion python /tmp/smoke.py
 Local smoke tests exercise text, Word, PowerPoint, Excel, CSV/TSV, Markdown, HTML, email, scanned PDF and image parsing; source citations; pagination; duplicate ingestion; rejected inputs; and database-scoped access. Local ports are loopback-only: ingestion `18080`, SurrealDB `18000`. `docker compose down` stops containers and retains the database volume.
 
 Reference: [Unstructured partitioning](https://docs.unstructured.io/open-source/core-functionality/partitioning), [Unstructured chunking](https://docs.unstructured.io/open-source/core-functionality/chunking).
+
+Per-account graph isolation and deployment: [multi-user knowledge graphs](services/ingestion/MULTI_USER.md).

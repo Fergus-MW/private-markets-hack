@@ -109,8 +109,18 @@ resource "google_cloud_run_v2_job" "connector" {
         resources {
           limits = { cpu = "1", memory = "2Gi" }
         }
+        env {
+          name = "GRAPH_IDENTITY_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.graph_identity.secret_id
+              version = google_secret_manager_secret_version.graph_identity.version
+            }
+          }
+        }
         dynamic "env" {
           for_each = {
+            GRAPH_MULTI_USER   = "true"
             CONNECTOR_PROVIDER = each.value.provider
             CONNECTOR_BUCKET   = google_storage_bucket.connector[each.key].name
             SOURCE_QUERY       = each.value.query
@@ -129,7 +139,7 @@ resource "google_cloud_run_v2_job" "connector" {
       }
     }
   }
-  depends_on = [google_secret_manager_secret_iam_member.connector,
+  depends_on = [google_secret_manager_secret_iam_member.graph_identity_connector, google_secret_manager_secret_iam_member.connector,
   google_storage_bucket_iam_member.connector, google_cloud_run_v2_service_iam_member.connector_ingest]
 }
 
