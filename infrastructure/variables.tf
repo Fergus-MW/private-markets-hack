@@ -29,6 +29,12 @@ variable "invoker_members" {
   type        = set(string)
   default     = []
 }
+variable "surreal_rpc_body_size" {
+  description = "SurrealDB max HTTP RPC body in bytes. Sources are stored base64 encoded, so this caps the largest ingestible file at roughly three quarters of it. The database default is 4 MiB, which rejected files above about 3 MB."
+  type        = number
+  default     = 33554432
+}
+
 variable "surreal_image" {
   type    = string
   default = "surrealdb/surrealdb:v2.3.10"

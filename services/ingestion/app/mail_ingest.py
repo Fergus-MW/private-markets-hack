@@ -16,6 +16,7 @@ from app.extraction import Ingestion
 from app.graph import Company, Person, Strict
 from app.graph_api import load, save
 from app.projects import materialize
+from app.store import SourceTooLarge
 
 router = APIRouter(prefix="/mail", tags=["inbound mail"])
 logger = logging.getLogger(__name__)
@@ -101,6 +102,8 @@ def ingest_mail(file: UploadFile, envelope: str = Form(...)):
                 {"sender": request.sender, "subject": request.subject, "sender_entity_id": entity.key})
     try:
         source_id = Ingestion(graph, store, use_gemini=True).ingest(item)
+    except SourceTooLarge as error:
+        raise HTTPException(413, str(error)) from None
     except (ValueError, OverflowError, KeyError) as error:
         raise HTTPException(422, str(error)) from None
     save(store, graph)

@@ -91,7 +91,7 @@ def gemini_extract(text):
         project = os.environ.get("GOOGLE_CLOUD_PROJECT") or project
         endpoint = f"https://aiplatform.googleapis.com/v1/projects/{project}/locations/global/publishers/google/models/{model}:generateContent"
         headers = {"Authorization": "Bearer " + credentials.token}
-    with httpx.Client(timeout=90) as client:
+    with httpx.Client(timeout=180) as client:
         response = client.post(endpoint, headers=headers, json=request)
         response.raise_for_status()
         payload = response.json()
@@ -252,10 +252,16 @@ class Ingestion:
                     source.metadata["proposal_status"] = "validated"
                     self.accept_proposals(source_id)
                     source.metadata["extraction_complete"] = True
-                except (ValueError, KeyError, IndexError):
+                except (ValueError, KeyError, IndexError, httpx.TimeoutException) as error:
+                    # A slow model call is transient. Recover the same way as bad
+                    # output: the text is already ingested, so downgrade this source
+                    # to partial and let a rerun retry it, rather than failing the
+                    # file and with it the connector's whole scan.
                     self.graph.state = before_proposals
                     source = self.graph.state.sources[source_id]
-                    source.warnings.append("Gemini extraction not run: model output failed validation; source retained for retry")
+                    source.warnings.append("Gemini extraction not run: " + (
+                        "the model timed out" if isinstance(error, httpx.TimeoutException)
+                        else "model output failed validation") + "; source retained for retry")
         elif structured:
             source.metadata["extraction_complete"] = True
         else:

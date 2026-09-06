@@ -114,6 +114,28 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(ingest("x.svg", "image/svg+xml", io.BytesIO(), 100)["status"], "archive_only")
             post.assert_not_called()
 
+    def test_a_source_the_graph_cannot_store_is_archived_not_failed(self):
+        # A 413 is permanent: rerunning it forever would block the whole account.
+        with patch("requests.get") as get, patch("google.oauth2.id_token.fetch_id_token", return_value="t"), patch("requests.post") as post:
+            get.return_value.json.return_value = {"extensions": [".pdf"], "source_extensions": [".pdf"], "max_bytes": 20000000}
+            post.return_value.status_code = 413
+            ingest = make_ingest("https://ingestion", "drive", "client-a")
+            result = ingest("big.pdf", "application/pdf", io.BytesIO(b"x"), 4,
+                            metadata={"source": {"id": "f1"}, "raw_object": "raw/big"})
+        self.assertEqual(result["status"], "archive_only")
+        post.return_value.raise_for_status.assert_not_called()
+
+    def test_other_upload_errors_still_fail_the_item(self):
+        import requests
+        with patch("requests.get") as get, patch("google.oauth2.id_token.fetch_id_token", return_value="t"), patch("requests.post") as post:
+            get.return_value.json.return_value = {"extensions": [".pdf"], "source_extensions": [".pdf"], "max_bytes": 20000000}
+            post.return_value.status_code = 500
+            post.return_value.raise_for_status.side_effect = requests.HTTPError("boom")
+            ingest = make_ingest("https://ingestion", "drive", "client-a")
+            with self.assertRaises(requests.HTTPError):
+                ingest("f.pdf", "application/pdf", io.BytesIO(b"x"), 4,
+                       metadata={"source": {"id": "f1"}, "raw_object": "raw/f"})
+
     def test_office_pdf_and_text_use_advertised_parser_formats(self):
         with patch("requests.get") as get, patch("google.oauth2.id_token.fetch_id_token", return_value="identity") as token, patch("requests.post") as post:
             extensions = [".doc", ".docx", ".xls", ".xlsx", ".pptx", ".pdf", ".csv", ".md", ".msg"]

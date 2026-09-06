@@ -5,6 +5,16 @@ import httpx
 # atomically replaces the complete output; no entity or mention writes occur.
 SAVE = "UPSERT type::thing('document', $document.key) CONTENT $document;"
 
+# SurrealDB rejects an oversized RPC body with 413, so the real ceiling on a
+# stored source is its base64 form, not the raw file. Keep this in step with
+# SURREAL_HTTP_MAX_RPC_BODY_SIZE on the database VM; terraform sets both.
+RPC_BODY_LIMIT = int(os.environ.get("SURREAL_HTTP_MAX_RPC_BODY_SIZE", 4 << 20))
+MAX_BLOB_BYTES = max(0, RPC_BODY_LIMIT - 8192) * 3 // 4
+
+
+class SourceTooLarge(ValueError):
+    """The retained bytes do not fit in one database write."""
+
 
 class Store:
     def __init__(self, *, database=None, namespace=None, user=None, password=None, auth_level=None):
@@ -58,6 +68,11 @@ class Store:
     def save_source_bytes(self, source_id, content):
         import base64
         import hashlib
+        # Guard every caller here rather than at one endpoint: a 413 from the
+        # database surfaces as an opaque 500 and fails the whole connector run.
+        if len(content) > MAX_BLOB_BYTES:
+            raise SourceTooLarge(
+                f"Source is {len(content)} bytes; this database stores at most {MAX_BLOB_BYTES} bytes per source")
         self.query("UPSERT type::thing('source_blob', $key) CONTENT $blob;", {
             "key": source_id, "blob": {"sha256": hashlib.sha256(content).hexdigest(),
                                        "base64": base64.b64encode(content).decode()}})

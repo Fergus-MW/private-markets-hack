@@ -10,6 +10,7 @@ from app.connectors import GoogleConnector
 from app.extraction import Ingestion
 from app.graph import ENTITIES, Entity, GraphState, Strict
 from app.store import GraphStore
+from app.store import SourceTooLarge
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -152,6 +153,8 @@ def sync(request: SyncRequest):
                 graph.edge(project_id, "for_fund", project.fund_id, source_id)
                 graph.edge(project_id, "for_company", project.management_company_id, source_id)
                 graph.edge(source_id, "part_of", project_id, source_id)
+    except SourceTooLarge as error:
+        raise HTTPException(413, str(error)) from None
     except (ValueError, OverflowError, KeyError) as error:
         raise HTTPException(422, str(error)) from None
     except Exception:

@@ -11,6 +11,7 @@ from app.connectors import Item, MAX_BYTES
 from app.extraction import Ingestion
 from app.graph import Strict
 from app.graph_api import load, save
+from app.store import SourceTooLarge
 
 router = APIRouter()
 
@@ -45,6 +46,10 @@ def ingest_source(file: UploadFile, envelope: str = Form(...)):
     try:
         source_id = Ingestion(graph, store, use_gemini=request.use_gemini, fund_id=request.fund_id,
             snapshot_as_of=request.snapshot_as_of.isoformat() if request.snapshot_as_of else None).ingest(item)
+    except SourceTooLarge as error:
+        # A distinct, actionable status: the connector retains the bytes and
+        # records the source as archive-only instead of failing its whole scan.
+        raise HTTPException(413, str(error)) from None
     except (ValueError, OverflowError, KeyError) as error:
         raise HTTPException(422, str(error)) from None
     save(store, graph)

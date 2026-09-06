@@ -282,6 +282,11 @@ def make_ingest(url, provider=None, account=None, tenant=None):
         response = requests.post(url + ("/sources" if provider else "/documents"),
                                  headers=headers,
                                  files={"file": (filename, source, mime)}, timeout=(30, 910), **options)
+        if response.status_code == 413:
+            # The graph cannot store this source, and no rerun will change that.
+            # Bytes stay in the archive; failing the scan would only loop forever.
+            LOG.warning("Source too large for the graph archive=%s", (metadata or {}).get("raw_object", ""))
+            return {"status": "archive_only", "reason": "Graph source size limit"}
         response.raise_for_status()
         result = response.json()
         incomplete = any("skipped" in w.lower() or "not run" in w.lower() or "deferred_to_project" in w.lower() for w in result.get("warnings", []))

@@ -23,7 +23,7 @@ ROOT_PASSWORD=$(secret surrealdb-root-password)
 INGESTION_PASSWORD=$(secret surrealdb-ingestion-password)
 PROJECT_PROVISIONER_PASSWORD=$(secret surrealdb-project-provisioner-password)
 umask 077
-printf 'SURREAL_USER=root\nSURREAL_PASS=%s\n' "$ROOT_PASSWORD" > /run/surrealdb.env
+printf 'SURREAL_USER=root\nSURREAL_PASS=%s\nSURREAL_HTTP_MAX_RPC_BODY_SIZE=%s\n' "$ROOT_PASSWORD" '${surreal_rpc_body_size}' > /run/surrealdb.env
 docker pull '${surreal_image}'
 docker rm -f surrealdb || true
 docker run -d --name surrealdb --restart unless-stopped --user 0:0 --memory 1500m --log-opt max-size=10m --log-opt max-file=3 --env-file /run/surrealdb.env -p 8000:8000 -v /var/lib/surrealdb:/data '${surreal_image}' start --bind 0.0.0.0:8000 rocksdb:/data/database.db
