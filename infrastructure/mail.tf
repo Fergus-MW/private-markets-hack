@@ -147,6 +147,13 @@ resource "google_cloud_run_v2_service" "mail" {
   location            = var.region
   deletion_protection = false
   ingress             = "INGRESS_TRAFFIC_ALL"
+  # Match the service-level defaults returned by the Cloud Run API, as the
+  # ingestion service already does. Without it every plan wants to remove a
+  # block the API always reports, and that standing diff hides real drift.
+  scaling {
+    min_instance_count    = 0
+    manual_instance_count = 0
+  }
   lifecycle {
     ignore_changes = [template[0].containers[0].image]
     precondition {
