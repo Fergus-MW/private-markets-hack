@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-// Spectrum sampled from the rainbow accent on 60x.ai.
+// Rainbow accent spectrum.
 const PALETTE = ['#5a18ff', '#00adfc', '#00f8e1', '#cf00e4', '#ff00ae', '#ff8262'];
 
 export function createGraph(container) {

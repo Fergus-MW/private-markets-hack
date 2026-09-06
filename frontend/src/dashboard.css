@@ -85,8 +85,10 @@
 .gate-index .site-nav { margin-bottom: 44px; }
 .gate-index h1 { font-weight: 450; font-size: 40px; letter-spacing: -2px; line-height: 1.08; margin: 0 0 8px; color: #f5f1ec; }
 .gate-index > p { color: #b8b2ab; margin: 0 0 28px; font-size: 15px; }
-.gate-index a { color: #ff8262; text-decoration: none; }
-.gate-index a:hover { color: #ffb4a0; }
+/* Scoped to the list: the site nav keeps its own colours from style.css, so the
+   header reads the same here as on every other page. */
+.gate-index .gate-list a { color: #ff8262; text-decoration: none; }
+.gate-index .gate-list a:hover { color: #ffb4a0; }
 .gate-list { display: flex; flex-direction: column; gap: 10px; }
 .gate-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 16px 18px; background: #141316; border: 1px solid rgb(245 241 236 / 8%); border-radius: 9px; }
 .gate-item strong { font-weight: 550; display: block; color: #f5f1ec; }

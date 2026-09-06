@@ -1,6 +1,6 @@
-# 60x connection screen
+# Connection screen
 
-A vanilla JavaScript / Vite frontend with a Three.js knowledge graph. The palette follows the rainbow accent on [60x.ai](https://www.60x.ai/): violet `#5a18ff`, blue `#00adfc`, cyan `#00f8e1`, purple `#cf00e4`, pink `#ff00ae`, peach `#ff8262`, with warm ivory and near-black. The separate black overlay is a radial gradient from **80% opacity at the centre to 50% at the edges**. Motion pauses offscreen and respects reduced-motion preferences. The landing page includes Google connection and navigation to the private graph explorer; authorization errors appear only when needed.
+A vanilla JavaScript / Vite frontend with a Three.js knowledge graph. The palette is a rainbow accent: violet `#5a18ff`, blue `#00adfc`, cyan `#00f8e1`, purple `#cf00e4`, pink `#ff00ae`, peach `#ff8262`, with warm ivory and near-black. The separate black overlay is a radial gradient from **80% opacity at the centre to 50% at the edges**. Motion pauses offscreen and respects reduced-motion preferences. The landing page includes Google connection and navigation to the private graph explorer; authorization errors appear only when needed.
 
 ## Local preview
 
