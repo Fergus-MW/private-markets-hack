@@ -2,7 +2,7 @@ import copy
 import unittest
 from unittest.mock import Mock
 
-from mail_agent.engine import WELCOME, WORKFLOWS, Engine
+from mail_agent.engine import WELCOME, WORKFLOWS, Engine, carries_evidence
 from mail_agent.storage import Busy, key, tenant
 
 
@@ -304,6 +304,54 @@ class WelcomeTests(unittest.TestCase):
         self.assertEqual(set(described), {name for name, _ in WORKFLOWS.values()})
         for phrase in described.values():
             self.assertIn(phrase, WELCOME)
+
+
+class OwnMailTests(unittest.TestCase):
+    def setUp(self):
+        self.repo, self.queue, self.mailer, self.graph, self.router = Memory(), Mock(), Mock(), Mock(), Mock()
+        self.engine = Engine(self.repo, self.queue, self.mailer, lambda account: self.graph, self.router)
+        self.mailer.raw.return_value = b"From: me@fund.com\r\n\r\nbody"
+        self.router.return_value = {"reply": "Noted."}
+        self.graph.projects.return_value = []
+        self.graph.upload.return_value = {"source_id": "s1", "attachments": 1,
+                                          "projects": [{"project_id": "p1", "name": "Fund A 2026-Q2"}]}
+        self.job = {"kind": "incoming", "email": "me@fund.com", "tenant": "u-1",
+                    "message_id": "m1", "thread_id": "t1", "text": "here you go"}
+
+    def run_job(self, **extra):
+        self.repo.create("jobs", "in", {**self.job, **extra})
+        self.engine.process("in")
+        return self.repo.rows["in"]
+
+    def test_a_message_with_an_attachment_is_filed_and_reported(self):
+        row = self.run_job(attachments=1, subject="Q2 statement")
+        self.graph.upload.assert_called_once()
+        self.assertEqual(self.graph.upload.call_args.args[0], "/mail/ingest")
+        self.assertTrue(row["filing"]["filed"])
+        self.assertIn("Fund A 2026-Q2", self.mailer.send.call_args.args[1])
+
+    def test_a_forwarded_message_is_filed_even_without_attachments(self):
+        self.run_job(attachments=0, subject="Fwd: administrator change")
+        self.graph.upload.assert_called_once()
+
+    def test_a_bare_instruction_is_never_filed(self):
+        row = self.run_job(attachments=0, subject="Run QC for Fund A")
+        self.graph.upload.assert_not_called()
+        self.assertFalse(row["filing"]["filed"])
+        self.assertNotIn("filed this message", self.mailer.send.call_args.args[1])
+
+    def test_a_failed_filing_still_answers_the_sender(self):
+        self.graph.upload.side_effect = RuntimeError("ingestion down")
+        row = self.run_job(attachments=1, subject="Q2 statement")
+        self.assertFalse(row["filing"]["filed"])
+        self.assertIn("Noted.", self.mailer.send.call_args.args[1])
+        self.assertTrue(row["done"])
+
+    def test_evidence_rule_reads_attachments_and_forward_prefixes(self):
+        self.assertTrue(carries_evidence({"attachments": 2}))
+        for subject in ("Fwd: x", "FW: x", "  fwd:x", "Re: Fwd: x"):
+            self.assertEqual(carries_evidence({"subject": subject}), subject.strip().lower().startswith(("fw", "fwd")))
+        self.assertFalse(carries_evidence({"subject": "Run QC", "attachments": 0}))
 
 
 if __name__ == "__main__":

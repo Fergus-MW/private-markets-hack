@@ -31,7 +31,10 @@ def verify(value, method, path):
             or claims.get('kind') not in {'user', 'connector'}
             or not isinstance(claims.get('actor'), str) or not 0 < len(claims['actor']) <= 256):
         raise ValueError('Invalid identity claims')
-    if claims['kind'] == 'connector' and (method, path) != ('POST', '/sources'):
+    # A connector may deposit sources and carry them into the projects they relate
+    # to. Both stay inside the asserted tenant and copy only already-ingested data.
+    if claims['kind'] == 'connector' and (method, path) not in {
+            ('POST', '/sources'), ('POST', '/mail/refresh-projects')}:
         raise ValueError('Connector identity is restricted to source ingestion')
     return claims
 

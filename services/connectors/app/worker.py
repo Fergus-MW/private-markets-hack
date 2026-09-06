@@ -172,7 +172,7 @@ class Lease:
         self.blob.delete(if_generation_match=self.generation)
 
 
-def process(service, provider, item, archive, ingest, max_bytes, heartbeat=lambda: None, visited=()):
+def process(service, provider, item, archive, ingest, max_bytes, heartbeat=lambda: None, visited=(), collected=None):
     key = object_key(provider, item)
     if item["id"] in visited:
         raise ValueError("Drive shortcut cycle")
@@ -225,16 +225,18 @@ def process(service, provider, item, archive, ingest, max_bytes, heartbeat=lambd
                 record.update(ingest(filename, mime, source, size))
         heartbeat()
         archive.write(marker, record)
+        if collected is not None and record.get("source_id"):
+            collected.append(record["source_id"])
     return record["status"]
 
 
-def graph_identity(tenant):
+def graph_identity(tenant, path='/sources'):
     secret = os.environ.get('GRAPH_IDENTITY_SECRET', '')
     if len(secret) < 32:
         raise ValueError('GRAPH_IDENTITY_SECRET is required for multi-user ingestion')
     now = int(time.time())
     claims = {'tenant': tenant, 'actor': tenant, 'kind': 'connector', 'aud': 'knowledge-graph',
-              'iat': now, 'exp': now + 60, 'method': 'POST', 'path': '/sources'}
+              'iat': now, 'exp': now + 60, 'method': 'POST', 'path': path}
     payload = base64.urlsafe_b64encode(json.dumps(claims, separators=(',', ':')).encode()).decode().rstrip('=')
     return payload + '.' + hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
 
@@ -323,6 +325,27 @@ def object_prefix(env=os.environ):
     return prefix + "/"
 
 
+def refresh_projects(url, source_ids, tenant):
+    """Carry this scan's new sources into the projects they relate to, once at the
+    end. Never fails the scan: the sources are already in the canonical graph, and
+    the next scan retries the refresh."""
+    if not url or not source_ids:
+        return
+    import requests
+    from google.auth.transport.requests import Request
+    from google.oauth2.id_token import fetch_id_token
+    headers = {"Authorization": "Bearer " + fetch_id_token(Request(), url)}
+    if tenant:
+        headers["X-Graph-Identity"] = graph_identity(tenant, "/mail/refresh-projects")
+    try:
+        response = requests.post(url + "/mail/refresh-projects", headers=headers,
+                                 json={"source_ids": sorted(source_ids)[:500]}, timeout=(30, 910))
+        response.raise_for_status()
+        LOG.info("Project refresh finished projects=%d", len(response.json().get("projects", [])))
+    except Exception as error:
+        LOG.warning("Project refresh skipped error_type=%s", type(error).__name__)
+
+
 def completion_status(counts):
     """Report an empty scan explicitly instead of presenting it as completed."""
     if not counts:
@@ -373,13 +396,15 @@ def main():
         raise RuntimeError("Another execution holds the connection lease")
     try:
         progress("running")
+        ingested = []
         url = os.environ.get("INGESTION_URL", "").rstrip("/")
         ingest = make_ingest(url, provider, os.environ["CONNECTOR_BUCKET"] + ("/" + prefix.rstrip("/") if prefix else ""), tenant=tenant) if url else None
         for item in items(service, provider, os.environ.get("SOURCE_QUERY", ""), os.environ.get("DRIVE_ID", "")):
             lease.renew()
             try:
                 status = process(service, provider, item, Archive(bucket, prefix), ingest,
-                                 int(os.environ.get("MAX_SOURCE_BYTES", str(256 * 1024 * 1024))), lease.renew)
+                                 int(os.environ.get("MAX_SOURCE_BYTES", str(256 * 1024 * 1024))), lease.renew,
+                                 collected=ingested)
             except RefreshError:
                 raise
             except Exception as error:
@@ -392,6 +417,7 @@ def main():
             progress("running")
         Archive(bucket, prefix).write("state/last_run.json", {"finished_at": time.time(), "counts": counts})
         LOG.info("Scan finished counts=%s", counts)
+        refresh_projects(url, ingested, tenant)
         if counts.get("failed"):
             raise RuntimeError("Scan has failed items; rerun to retry them")
         progress(completion_status(counts))

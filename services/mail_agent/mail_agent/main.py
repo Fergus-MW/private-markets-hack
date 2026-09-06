@@ -151,6 +151,10 @@ async def webhook(request: Request):
     identifier = key("incoming", message["inbox_id"], message_id)
     repository().create("jobs", identifier, {"kind": "incoming", **account,
         "message_id": message_id, "thread_id": message.get("thread_id") or message_id,
+        # Signals for filing the sender's own mail as evidence. Kept raw so the
+        # rule can change without stranding jobs queued under the old one.
+        "subject": (message.get("subject") or "")[:1000],
+        "attachments": len(message.get("attachments") or []),
         "text": ((message.get("subject") or "") + "\n\n" + text)[:24000]})
     enqueue(identifier)
     return {"accepted": True}

@@ -1,5 +1,6 @@
 """Email conversation coordinator. Workflow execution runs in a separate task."""
 import json
+import re
 import time
 from urllib.parse import quote
 
@@ -9,6 +10,15 @@ from .ingestion import Ingestion
 LINKS = {"get_project_graph_link": "project graph",
          "get_workspace_graph_link": "high-level knowledge graph",
          "get_qc_dashboard_link": "QC gate dashboard"}
+
+# A forwarded message or an attachment carries evidence. A bare instruction does
+# not, and filing every "run QC for Fund A" would bury the graph in its own noise.
+FORWARDED = re.compile(r"^\s*(fwd?|tr|wg|rv|enc)\s*:", re.I)
+
+
+def carries_evidence(job):
+    return bool(job.get("attachments")) or bool(FORWARDED.match(job.get("subject") or ""))
+
 
 WORKFLOWS = {"trigger_qc_gate": ("qc", "QC gate"),
              "trigger_first_run": ("first-run", "first run-through"),
@@ -140,6 +150,32 @@ class Engine:
         self.graph_factory, self.router = graph_factory, router
         self.ingestion = ingestion or Ingestion(repo, queue)
 
+    def own_mail(self, job):
+        """File the sender's own message as evidence. Their words go into the graph
+        with their attachments, because the sentence explaining a document is often
+        the substantive half. Never fatal: the reply matters more than the filing."""
+        if not carries_evidence(job):
+            return {"filed": False, "reason": "no attachment or forwarded message"}
+        try:
+            result = self.graph_factory(job).upload("/mail/ingest", {
+                "sender": job["email"], "external_id": job["message_id"],
+                "subject": job.get("subject", "")}, self.mailer.raw(job["message_id"]))
+        except Exception as error:
+            return {"filed": False, "reason": type(error).__name__}
+        return {"filed": True, "source_id": result["source_id"],
+                "attachments": result["attachments"], "projects": result["projects"]}
+
+    def filed_note(self, filing):
+        if not filing.get("filed"):
+            return ""
+        projects = filing.get("projects") or []
+        note = "\n\nI have also filed this message"
+        note += f" and its {filing['attachments']} attachments" if filing.get("attachments") else ""
+        if projects:
+            return note + " into your knowledge graph, and refreshed " + ", ".join(
+                p.get("name", "a project") for p in projects) + "."
+        return note + " into your knowledge graph. It did not match an open project."
+
     def client_mail(self, job):
         """Ingest one inbound client message into every graph that already knows the
         sender, refreshing the projects it relates to. Re-running is safe: sources are
@@ -197,6 +233,9 @@ class Engine:
                         if attempts < 3:
                             raise
                         save(decision={"reply": "I could not read your request or load your projects, even after retrying. I have started no work. Please send it again in a few minutes."})
+                if "filing" not in job:
+                    save(filing=self.own_mail(job))
+                note = self.filed_note(job["filing"])
                 decision = job["decision"]
                 if "tool_call" in decision:
                     call = decision["tool_call"]
@@ -264,10 +303,10 @@ class Engine:
                         self.repo.remember(key(job["tenant"], job.get("thread_id", identifier)), identifier,
                             {"request": job.get("text"), "decision": job.get("decision"),
                              "tool_result": job["tool_result"], "result": None})
-                        send("start_sent", f"Thank you. I am starting the {label} for project {call['args']['project_id']} and have handed it to the workflow agent team. I will write again as soon as it finishes.\n\nTask: {workflow_id}")
+                        send("start_sent", f"Thank you. I am starting the {label} for project {call['args']['project_id']} and have handed it to the workflow agent team. I will write again as soon as it finishes.\n\nTask: {workflow_id}" + note)
                         self.queue(workflow_id)
                 else:
-                    send("reply_sent", decision["reply"])
+                    send("reply_sent", decision["reply"] + note)
             elif job["kind"] == "ingestion":
                 send("start_sent", "I am starting on your connected Drive and Gmail files now and will build your knowledge graph from them. I will email you when it finishes, or sooner if anything stops it completing.")
                 if "result" not in job:
