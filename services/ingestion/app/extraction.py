@@ -50,6 +50,17 @@ class Extraction(Strict):
     projects: list[ProjectCandidate] = Field(default_factory=list, max_length=50)
 
 
+# Allowed (subject kinds, object kinds) per relationship predicate. Shared by validated model
+# proposals and by explicit relationship rows; "administers" is only reachable from explicit rows
+# because RelationshipCandidate.predicate does not allow it.
+RELATIONSHIP_KINDS = {"works_for": ({"person"}, {"company"}),
+                      "manages": ({"company"}, {"fund"}),
+                      "administers": ({"company"}, {"fund"}),
+                      "invests_in": ({"person", "company", "fund"}, {"fund"})}
+RELATIONSHIP_COLUMNS = {"subject_kind", "subject_name", "subject_ns", "subject_id", "predicate",
+                        "object_kind", "object_name", "object_ns", "object_id"}
+
+
 def gemini_extract(text):
     model = os.environ.get("GEMINI_MODEL", "gemini-3.1-pro-preview")
     if not model.startswith("gemini-") or not any(family in model for family in ("flash", "pro")):
@@ -298,6 +309,25 @@ class Ingestion:
                                      external_ids={"corvus:legal_entity": values["entity_id_corvus"]},
                                      currency=values.get("currency"))
             return True
+        # Explicit canonical relationships. Both ends resolve through namespaced IDs, never by name alone,
+        # so a row can only link entities that carry the same identifier the seed exports used.
+        if RELATIONSHIP_COLUMNS <= columns:
+            for row in rows:
+                # Validate the whole row before touching the graph: a rejected row must not
+                # leave one of its ends behind as a half-applied entity.
+                if row["predicate"] not in RELATIONSHIP_KINDS:
+                    raise ValueError(f"Unsupported relationship predicate: {row['predicate']}")
+                left, right = RELATIONSHIP_KINDS[row["predicate"]]
+                if row["subject_kind"] not in left or row["object_kind"] not in right:
+                    raise ValueError("Invalid relationship entity types")
+                if any(not row[side + part] for side in ("subject", "object") for part in ("_name", "_ns", "_id")):
+                    raise ValueError("Relationship rows require a name and a namespaced ID at both ends")
+                ends = [self.graph.upsert(row[side + "_kind"], row[side + "_name"], source_id,
+                                          external_ids={row[side + "_ns"]: row[side + "_id"]})
+                        for side in ("subject", "object")]
+                self.graph.edge(ends[0], row["predicate"], ends[1], source_id,
+                                valid_from=row.get("valid_from") or None, valid_to=row.get("valid_to") or None)
+            return True
         # Generic explicit canonical export. No field-name/name fuzzy inference.
         if {"kind", "name", "id_namespace", "external_id"} <= columns:
             for row in rows:
@@ -328,10 +358,7 @@ class Ingestion:
                 raise ValueError("Relationship refers to an unknown proposed entity")
             subject = self.graph.state.entities[by_name[rel.subject_name]]
             object_entity = self.graph.state.entities[by_name[rel.object_name]]
-            expected = {"works_for": ({"person"}, {"company"}),
-                        "manages": ({"company"}, {"fund"}),
-                        "invests_in": ({"person", "company", "fund"}, {"fund"})}
-            left, right = expected[rel.predicate]
+            left, right = RELATIONSHIP_KINDS[rel.predicate]
             if subject.kind not in left or object_entity.kind not in right:
                 raise ValueError("Invalid relationship entity types")
             self.graph.edge(by_name[rel.subject_name], rel.predicate, by_name[rel.object_name], source_id,

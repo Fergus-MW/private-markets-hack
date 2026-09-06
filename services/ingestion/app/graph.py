@@ -91,7 +91,7 @@ class Edge(Strict):
     key: str
     subject: str
     predicate: Literal["sent", "received", "attached_to", "mentions", "works_for",
-                       "manages", "invests_in", "for_fund", "for_company", "part_of", "received_via"]
+                       "manages", "administers", "invests_in", "for_fund", "for_company", "part_of", "received_via"]
     object: str
     source_id: str
     valid_from: date | None = None

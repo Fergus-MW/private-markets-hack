@@ -163,6 +163,37 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(terms_as_of(self.graph, fund, date(2026, 6, 30))["rows"][0]["mgmt_fee_rate_pa"], "0.0085")
         self.assertEqual(terms_as_of(self.graph, fund, date(2026, 9, 30))["rows"][0]["mgmt_fee_rate_pa"], "0.0075")
 
+    def test_explicit_relationship_rows_link_by_identifier_without_a_model(self):
+        ingestion = Ingestion(self.graph, parser=lambda *_: self.fail("Structured rows never reach the parser"))
+        ingestion.ingest(Item("drive", "a", "entities", "entities.csv",
+            b"kind,name,id_namespace,external_id,email\n"
+            b"person,Kevin Gu,demo:contact,kevin-gu,kevin@example.com\n"
+            b"company,Trentcombe,corvus:common_id,13218,\n"
+            b"fund,Lammwick,corvus:legal_entity,2254,\n"))
+        before = len(self.graph.state.entities)
+        header = ("subject_kind,subject_name,subject_ns,subject_id,predicate,"
+                  "object_kind,object_name,object_ns,object_id,valid_from,valid_to\n")
+        rows = ("person,Kevin Gu,demo:contact,kevin-gu,works_for,company,Trentcombe Fund Investors,corvus:common_id,13218,2026-07-01,\n"
+                "company,Trentcombe,corvus:common_id,13218,invests_in,fund,Lammwick,corvus:legal_entity,2254,,\n"
+                "company,Marlbank,demo:company,marlbank,administers,fund,Lammwick,corvus:legal_entity,2254,,\n")
+        ingestion.ingest(Item("drive", "a", "relationships", "relationships.csv", (header + rows).encode()))
+        self.assertEqual(len(self.graph.state.entities), before + 1)  # only Marlbank is new; other ends resolved by ID
+        self.assertEqual(sorted(e.predicate for e in self.graph.state.edges.values()), ["administers", "invests_in", "works_for"])
+        trentcombe = next(e for e in self.graph.state.entities.values() if e.kind == "company" and e.name == "Trentcombe")
+        self.assertEqual(trentcombe.aliases, ["Trentcombe Fund Investors"])
+        kevin = next(e for e in self.graph.state.entities.values() if e.kind == "person")
+        self.assertEqual(self.graph.flatten(kevin.key, as_of=date(2026, 6, 30))["relationships"], [])
+        self.assertEqual(len(self.graph.flatten(kevin.key, as_of=date(2026, 8, 1))["relationships"]), 1)
+        before_bad_rows = self.graph.state.model_copy(deep=True)
+        for bad in ("fund,Lammwick,corvus:legal_entity,2254,works_for,company,Trentcombe,corvus:common_id,13218,,\n",
+                    "company,Trentcombe,corvus:common_id,13218,owns,fund,Lammwick,corvus:legal_entity,2254,,\n",
+                    "company,Trentcombe,,,invests_in,fund,Lammwick,corvus:legal_entity,2254,,\n"):
+            with self.assertRaises(ValueError):
+                ingestion.ingest(Item("drive", "a", "bad" + bad[:12], "bad.csv", (header + bad).encode()))
+        # A row rejected by validation neither creates nor touches either of its ends.
+        self.assertEqual(self.graph.state.entities, before_bad_rows.entities)
+        self.assertEqual(self.graph.state.edges, before_bad_rows.edges)
+
 
 class ConnectorTests(unittest.TestCase):
     @patch.dict(os.environ, {"GOOGLE_ACCESS_TOKEN": "test", "GOOGLE_REFRESH_TOKEN": ""})
